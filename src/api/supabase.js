@@ -19,11 +19,24 @@ async function fetchSupabase(path) {
 // limit=10000 overrides the default 1,000-row cap
 export async function fetchSignals() {
   return fetchSupabase(
-    'signals?select=id,created_at,signal_type,source,match_method,org_name,confidence,severity,routed_at,actioned_at&limit=10000'
+    'signals?select=id,created_at,signal_type,source,match_method,org_name,confidence,severity,routed_at&limit=10000'
   )
 }
 
-// Fetch all posts — only columns the dashboard needs
+// Fetch all posts with pagination (server caps at 1,000 rows per request)
 export async function fetchPosts() {
-  return fetchSupabase('posts?select=captured_date,source&limit=10000')
+  const PAGE_SIZE = 1000
+  const all = []
+  let offset = 0
+
+  while (true) {
+    const page = await fetchSupabase(
+      `posts?select=captured_date,source&limit=${PAGE_SIZE}&offset=${offset}`
+    )
+    all.push(...page)
+    if (page.length < PAGE_SIZE) break
+    offset += PAGE_SIZE
+  }
+
+  return all
 }

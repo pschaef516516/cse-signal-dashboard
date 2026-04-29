@@ -9,8 +9,8 @@ export default function MatchByTypeChart({ signals }) {
     const subset = signals.filter((s) => s.signal_type === type)
     return {
       type,
-      Matched: subset.filter((s) => s.match_method != null).length,
-      Unmatched: subset.filter((s) => s.match_method == null).length,
+      Matched: subset.filter((s) => s.match_method != null && s.match_method !== 'not_found').length,
+      Unmatched: subset.filter((s) => s.match_method == null || s.match_method === 'not_found').length,
     }
   })
 

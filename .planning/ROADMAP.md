@@ -1,0 +1,25 @@
+# CSE Signal Dashboard — Roadmap
+
+## Milestone 1: MVP Dashboard
+
+### Phase 01 — CSE Signal Dashboard (COMPLETE)
+**Goal:** Build a static React dashboard reading from Supabase displaying all CSE signal pipeline metrics — live panels wired to real data, placeholder panels for future data, deployed to Vercel.
+
+**Depends on:** nothing
+
+**Plans:**
+- 01-01: Full dashboard build (scaffold → API → utils → charts → deploy)
+
+### Phase 02 — Filtering, Drill-downs & Signal Detail
+**Goal:** Add time period filtering (7d/30d/90d/all), clickable charts that drill into individual signals, a signal detail view showing key quote + summary + suggested action, and a more data-rich Enrollment & Upsell tab.
+
+**Depends on:** Phase 01
+
+**Plans:** (not yet planned)
+
+### Phase 03 — Claude AI Analysis
+**Goal:** Integrate Claude AI into the dashboard so the CSE team can ask questions about signals and get automatic analysis (pattern detection, urgent signals, weekly summaries). Local dev uses .env.local API key; production routes through a Vercel serverless function to keep the key server-side.
+
+**Depends on:** Phase 02
+
+**Plans:** (not yet planned)
