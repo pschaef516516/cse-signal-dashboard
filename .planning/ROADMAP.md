@@ -15,7 +15,12 @@
 
 **Depends on:** Phase 01
 
-**Plans:** (not yet planned)
+**Plans:** 5 plans
+- [ ] 02-01-PLAN.md — Data layer: filterByDateRange, groupBySourceAndType, export getISOWeekLabel, fetchSignals new columns
+- [ ] 02-02-PLAN.md — Presentational components: FilterPills, SignalDrawer, SignalCard, SignalDetail
+- [ ] 02-03-PLAN.md — Chart onClick wiring + new EnrollmentUpsellSplitChart and EUCommunityChart
+- [ ] 02-04-PLAN.md — App.jsx integration: filter state, drawer wiring, TopOrgsTable removal, E&U enrichment
+- [ ] 02-05-PLAN.md — End-to-end visual + interaction verification (human checkpoint)
 
 ### Phase 03 — Claude AI Analysis
 **Goal:** Integrate Claude AI into the dashboard so the CSE team can ask questions about signals and get automatic analysis (pattern detection, urgent signals, weekly summaries). Local dev uses .env.local API key; production routes through a Vercel serverless function to keep the key server-side.
