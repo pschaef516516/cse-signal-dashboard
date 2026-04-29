@@ -38,8 +38,8 @@ export default function PostsVsSignalsChart({ signals, posts }) {
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
         <Tooltip />
         <Legend />
-        <Line type="monotone" dataKey="Posts" stroke="#6366f1" strokeWidth={2} dot={false} />
-        <Line type="monotone" dataKey="Signals" stroke="#10b981" strokeWidth={2} dot={false} />
+        <Line type="monotone" dataKey="Posts" stroke="#0057FF" strokeWidth={2} dot={false} />
+        <Line type="monotone" dataKey="Signals" stroke="#00A344" strokeWidth={2} dot={false} />
       </LineChart>
     </ResponsiveContainer>
   )

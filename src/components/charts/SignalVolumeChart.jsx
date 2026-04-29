@@ -18,9 +18,9 @@ export default function SignalVolumeChart({ signals }) {
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
         <Tooltip />
         <Legend />
-        <Bar dataKey="churn" stackId="a" fill="#ef4444" name="Churn" />
-        <Bar dataKey="enrollment" stackId="a" fill="#3b82f6" name="Enrollment" />
-        <Bar dataKey="upsell" stackId="a" fill="#10b981" name="Upsell" />
+        <Bar dataKey="churn" stackId="a" fill="#D81860" name="Churn" />
+        <Bar dataKey="enrollment" stackId="a" fill="#0057FF" name="Enrollment" />
+        <Bar dataKey="upsell" stackId="a" fill="#623CC9" name="Upsell" />
       </BarChart>
     </ResponsiveContainer>
   )

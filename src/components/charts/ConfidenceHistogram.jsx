@@ -15,7 +15,7 @@ export default function ConfidenceHistogram({ signals }) {
         <XAxis dataKey="range" tick={{ fontSize: 10 }} />
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
         <Tooltip />
-        <Bar dataKey="count" fill="#6366f1" name="Signals" />
+        <Bar dataKey="count" fill="#0057FF" name="Signals" />
       </BarChart>
     </ResponsiveContainer>
   )

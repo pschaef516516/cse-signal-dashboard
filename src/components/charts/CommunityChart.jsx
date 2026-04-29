@@ -3,7 +3,7 @@ import {
 } from 'recharts'
 import { countByField } from '../../utils/aggregate'
 
-const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe', '#f5f3ff']
+const COLORS = ['#0057FF', '#3378FF', '#6699FF', '#99BBFF', '#B2CDFF', '#CCdDFF', '#E3ECFF']
 
 export default function CommunityChart({ signals }) {
   const data = countByField(signals, 'source')

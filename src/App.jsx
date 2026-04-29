@@ -9,16 +9,22 @@ import SectionHeader from './components/ui/SectionHeader'
 import SignalVolumeChart from './components/charts/SignalVolumeChart'
 import CommunityChart from './components/charts/CommunityChart'
 import MatchRateChart from './components/charts/MatchRateChart'
-import MatchByTypeChart from './components/charts/MatchByTypeChart'
 import TopOrgsTable from './components/charts/TopOrgsTable'
 import ConfidenceHistogram from './components/charts/ConfidenceHistogram'
 import SeverityChart from './components/charts/SeverityChart'
 import PostsVsSignalsChart from './components/charts/PostsVsSignalsChart'
 
-function Panel({ title, children, className = '' }) {
+const TABS = [
+  { id: 'churn', label: 'Churn' },
+  { id: 'enrollment', label: 'Enrollment & Upsell' },
+]
+
+function Panel({ title, children }) {
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 p-5 ${className}`}>
-      {title && <p className="text-sm font-semibold text-gray-500 mb-4">{title}</p>}
+    <div style={{ background: '#FFFFFF', border: '1px solid #E1E6F2', borderRadius: 12, padding: 20 }}>
+      {title && (
+        <p style={{ fontSize: 14, fontWeight: 600, color: '#6B7487', marginBottom: 16 }}>{title}</p>
+      )}
       {children}
     </div>
   )
@@ -29,6 +35,7 @@ export default function App() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [activeTab, setActiveTab] = useState('churn')
 
   useEffect(() => {
     async function load() {
@@ -47,119 +54,161 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading dashboard data…</p>
+      <div style={{ minHeight: '100vh', background: '#FAFBFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: '#6B7487', fontSize: 14 }}>Loading dashboard data…</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-red-500 text-sm">Error: {error}</p>
+      <div style={{ minHeight: '100vh', background: '#FAFBFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: '#D81860', fontSize: 14 }}>Error: {error}</p>
       </div>
     )
   }
 
-  const churnSignals = signals.filter((s) => s.signal_type === 'churn')
-  const enrollUpsellSignals = signals.filter(
-    (s) => s.signal_type === 'enrollment' || s.signal_type === 'upsell'
+  const tabSignals = activeTab === 'churn'
+    ? signals.filter((s) => s.signal_type === 'churn')
+    : signals.filter((s) => s.signal_type === 'enrollment' || s.signal_type === 'upsell')
+
+  const isChurn = activeTab === 'churn'
+
+  const matchedSignals = tabSignals.filter(
+    (s) => s.match_method != null && s.match_method !== 'not_found'
   )
-  const matchedSignals = signals.filter((s) => s.match_method != null)
-  const matchRate =
-    signals.length > 0 ? Math.round((matchedSignals.length / signals.length) * 100) : 0
+  const matchRate = tabSignals.length > 0
+    ? Math.round((matchedSignals.length / tabSignals.length) * 100)
+    : 0
+
+  const highSeverity = tabSignals.filter((s) => s.severity === 'high').length
+  const uniqueOrgs = isChurn
+    ? getUniqueOrgs(signals, ['churn'])
+    : getUniqueOrgs(signals, ['enrollment', 'upsell'])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-8 py-5">
-        <h1 className="text-xl font-bold text-gray-900">CSE Signal Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Community Signal Engine — Pipeline Performance</p>
+    <div style={{ minHeight: '100vh', background: '#FAFBFF' }}>
+      {/* Header */}
+      <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E1E6F2', padding: '20px 32px 0' }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ width: 8, height: 32, background: '#0057FF', borderRadius: 4 }} />
+            <div>
+              <h1 style={{ fontSize: 22, fontWeight: 600, color: '#15181D', margin: 0 }}>CSE Signal Dashboard</h1>
+              <p style={{ fontSize: 14, color: '#6B7487', margin: 0 }}>Community Signal Engine — Pipeline Performance</p>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: 0 }}>
+            {TABS.map((tab) => {
+              const active = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    padding: '10px 20px',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: active ? '#0057FF' : '#6B7487',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: active ? '2px solid #0057FF' : '2px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'color 0.15s, border-color 0.15s',
+                  }}
+                >
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
 
-      <div className="px-8 py-6 space-y-8 max-w-screen-2xl mx-auto">
+      {/* Content */}
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '32px 32px' }}>
 
-        <section>
-          <SectionHeader title="Key Metrics" subtitle="All-time totals" />
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <StatCard title="Total Signals" value={signals.length} />
-            <StatCard title="Posts Ingested" value={posts.length} />
+        {/* Key Metrics */}
+        <div style={{ marginBottom: 32 }}>
+          <SectionHeader
+            title={isChurn ? 'Churn Signals' : 'Enrollment & Upsell Signals'}
+            subtitle="All-time totals"
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+            <StatCard title="Total Signals" value={tabSignals.length} />
             <StatCard
               title="Match Rate"
               value={`${matchRate}%`}
-              subtitle={`${matchedSignals.length} of ${signals.length} matched`}
+              subtitle={`${matchedSignals.length} of ${tabSignals.length} matched`}
             />
             <StatCard
-              title="Unique Pros Flagged"
-              value={getUniqueOrgs(signals, ['churn'])}
-              subtitle="Distinct orgs with churn signal"
+              title={isChurn ? 'Unique Pros Flagged' : 'Unique Leads'}
+              value={uniqueOrgs}
+              subtitle={isChurn ? 'Distinct orgs with churn signal' : 'Distinct orgs with enrollment/upsell'}
             />
             <StatCard
-              title="Unique Leads Routed"
-              value={getUniqueOrgs(signals, ['enrollment', 'upsell'])}
-              subtitle="Distinct orgs with enrollment/upsell"
+              title="High Severity"
+              value={highSeverity}
+              subtitle={`${tabSignals.length > 0 ? Math.round((highSeverity / tabSignals.length) * 100) : 0}% of signals`}
             />
-            <StatCard
-              title="Churn Signals"
-              value={churnSignals.length}
-              subtitle={`${enrollUpsellSignals.length} enrollment/upsell`}
-            />
+            <StatCard title="Posts Ingested" value={posts.length} subtitle="All communities" />
           </div>
-        </section>
+        </div>
 
-        <section>
-          <SectionHeader title="Signal Volume" subtitle="How many signals are being detected each week" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Panel title="Signals by Week (churn / enrollment / upsell)">
-              <SignalVolumeChart signals={signals} />
-            </Panel>
-            <Panel title="Posts Ingested vs Signals Generated (by date)">
-              <PostsVsSignalsChart signals={signals} posts={posts} />
-            </Panel>
-          </div>
-        </section>
+        {/* Pipeline Overview */}
+        <div style={{ marginBottom: 32 }}>
+          <SectionHeader title="Pipeline Overview" subtitle="Posts ingested vs signals generated over time" />
+          <Panel title="Posts Ingested vs Signals Generated">
+            <PostsVsSignalsChart signals={signals} posts={posts} />
+          </Panel>
+        </div>
 
-        <section>
-          <SectionHeader title="Signal Sources" subtitle="Which Facebook communities produce the most signals" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Panel title="Signals by Community (source)">
-              <CommunityChart signals={signals} />
+        {/* Signal Volume */}
+        <div style={{ marginBottom: 32 }}>
+          <SectionHeader title="Signal Volume" subtitle="Signals detected per week" />
+          <Panel title="Signals by Week">
+            <SignalVolumeChart signals={tabSignals} />
+          </Panel>
+        </div>
+
+        {/* Sources */}
+        <div style={{ marginBottom: 32 }}>
+          <SectionHeader title="Signal Sources" subtitle="Which communities produce the most signals" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <Panel title="Signals by Community">
+              <CommunityChart signals={tabSignals} />
             </Panel>
             <Panel title="Top Orgs by Signal Count">
-              <TopOrgsTable signals={signals} />
+              <TopOrgsTable signals={tabSignals} />
             </Panel>
           </div>
-        </section>
+        </div>
 
-        <section>
-          <SectionHeader title="Match Quality" subtitle="What % of signals were matched to a known HCP org" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Match & Quality */}
+        <div style={{ marginBottom: 32 }}>
+          <SectionHeader title="Match & Signal Quality" subtitle="Match rate and confidence distribution" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <Panel title="Overall Match Rate">
-              <MatchRateChart signals={signals} />
+              <MatchRateChart signals={tabSignals} />
             </Panel>
-            <Panel title="Matched vs Unmatched by Signal Type">
-              <MatchByTypeChart signals={signals} />
-            </Panel>
-          </div>
-        </section>
-
-        <section>
-          <SectionHeader title="Signal Quality" subtitle="Confidence scores and severity distribution" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Panel title="Confidence Score Distribution">
-              <ConfidenceHistogram signals={signals} />
+              <ConfidenceHistogram signals={tabSignals} />
             </Panel>
             <Panel title="Signals by Severity">
-              <SeverityChart signals={signals} />
+              <SeverityChart signals={tabSignals} />
             </Panel>
           </div>
-        </section>
+        </div>
 
-        <section>
+        {/* Action Metrics */}
+        <div style={{ marginBottom: 32 }}>
           <SectionHeader
             title="Action Metrics"
             subtitle="Available after Routing Agent and Slack 'Mark Actioned' button are built"
           />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
             <PlaceholderPanel
               title="Avg Time to Route"
               description="Time between signal detection and Routing Agent processing. Available after Routing Agent ships (routed_at column)."
@@ -173,7 +222,7 @@ export default function App() {
               description="Share of signals where a CSM took action. Available after Slack button ships (actioned_at column)."
             />
           </div>
-        </section>
+        </div>
 
       </div>
     </div>

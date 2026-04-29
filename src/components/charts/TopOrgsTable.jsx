@@ -1,7 +1,7 @@
 import { countByField } from '../../utils/aggregate'
 
 export default function TopOrgsTable({ signals }) {
-  const matched = signals.filter((s) => s.org_name != null)
+  const matched = signals.filter((s) => s.org_name != null && s.org_name !== '')
   const rows = countByField(matched, 'org_name').slice(0, 10)
 
   if (rows.length === 0) {

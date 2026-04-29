@@ -1,6 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
-const SEVERITY_COLORS = { low: '#fbbf24', medium: '#f97316', high: '#ef4444' }
+const SEVERITY_COLORS = { low: '#BF8600', medium: '#D81860', high: '#880E4F' }
 const ORDER = ['low', 'medium', 'high']
 
 export default function SeverityChart({ signals }) {

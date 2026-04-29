@@ -1,11 +1,19 @@
 export default function StatCard({ title, value, subtitle }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-1">
-      <p className="text-sm text-gray-500 font-medium">{title}</p>
-      <p className="text-3xl font-bold text-gray-900">
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #E1E6F2',
+      borderRadius: 12,
+      padding: 20,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 4,
+    }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: '#6B7487', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{title}</p>
+      <p style={{ fontSize: 28, fontWeight: 600, color: '#15181D', margin: 0, lineHeight: 1.2 }}>
         {value === null || value === undefined ? '—' : value}
       </p>
-      {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+      {subtitle && <p style={{ fontSize: 12, color: '#6B7487', margin: 0 }}>{subtitle}</p>}
     </div>
   )
 }

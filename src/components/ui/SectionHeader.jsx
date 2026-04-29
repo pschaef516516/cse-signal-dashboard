@@ -1,8 +1,8 @@
 export default function SectionHeader({ title, subtitle }) {
   return (
-    <div className="mb-4">
-      <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
-      {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
+    <div style={{ marginBottom: 16 }}>
+      <h2 style={{ fontSize: 16, fontWeight: 600, color: '#15181D', margin: 0 }}>{title}</h2>
+      {subtitle && <p style={{ fontSize: 14, color: '#6B7487', margin: '4px 0 0' }}>{subtitle}</p>}
     </div>
   )
 }

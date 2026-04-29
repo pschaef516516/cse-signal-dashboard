@@ -1,7 +1,7 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 export default function MatchRateChart({ signals }) {
-  const matched = signals.filter((s) => s.match_method != null).length
+  const matched = signals.filter((s) => s.match_method != null && s.match_method !== 'not_found').length
   const unmatched = signals.length - matched
   const pct = signals.length > 0 ? Math.round((matched / signals.length) * 100) : 0
 
@@ -21,8 +21,8 @@ export default function MatchRateChart({ signals }) {
       <ResponsiveContainer width="100%" height={200}>
         <PieChart>
           <Pie data={data} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
-            <Cell fill="#10b981" />
-            <Cell fill="#e5e7eb" />
+            <Cell fill="#00A344" />
+            <Cell fill="#E1E6F2" />
           </Pie>
           <Tooltip />
           <Legend />
