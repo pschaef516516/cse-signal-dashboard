@@ -42,7 +42,7 @@ Declared values (must be multiples of 4):
 | 3xl | 64px | (reserved — not used in this phase) |
 
 Exceptions:
-- Filter pill horizontal padding: 12px (between sm and md) — exact value from existing tab button pattern (`padding: '10px 20px'` in App.jsx; pills use `padding: '6px 12px'`)
+- Filter pill horizontal padding: 12px (between sm and md) — exact value from existing tab button pattern (`padding: '10px 20px'` in App.jsx; pills use `padding: '8px 12px'`)
 - Drawer width: 480px fixed — not a spacing token, it is a component dimension
 - Touch target minimum for filter pills: 36px height (accessible click area on desktop)
 - Header tab row row-gap: 0px (tabs are flush; pills float right in same row using `marginLeft: auto`)
@@ -131,7 +131,7 @@ New components added in this phase:
 
 - Four options: `7d`, `30d`, `90d`, `All`
 - Lives in the header bar, same row as tabs, pushed to the right via `marginLeft: auto`
-- Each pill: `borderRadius: 20px`, `fontSize: 13px`, `fontWeight: 600`, `padding: '6px 12px'`, `cursor: pointer`
+- Each pill: `borderRadius: 20px`, `fontSize: 12px`, `fontWeight: 600`, `padding: '8px 12px'`, `cursor: pointer`
 - Active/inactive/hover states defined in Color section above
 - Per-tab state: `churnFilter` and `enrollmentFilter` in App.jsx state
 
@@ -142,7 +142,7 @@ New components added in this phase:
 - Drawer panel: `position: fixed`, `top: 0`, `right: 0`, `bottom: 0`, `width: 480px`
 - Panel background: `#FFFFFF`, `borderLeft: '1px solid #E1E6F2'`
 - Animation: CSS `transform` slide — `translateX(100%)` (closed) to `translateX(0)` (open), `transition: transform 0.25s ease`
-- Drawer header: `padding: '20px 24px'`, title showing context (e.g. "Signals: Reddit › Churn"), `borderBottom: '1px solid #E1E6F2'`
+- Drawer header: `padding: '16px 24px'`, title showing context (e.g. "Signals: Reddit › Churn"), `borderBottom: '1px solid #E1E6F2'`
 - Signal list: `padding: 16px`, `overflowY: auto`, `flex: 1`
 - No explicit close button — backdrop click only (D-07)
 
@@ -281,7 +281,7 @@ After: tabs on left + filter pills on right, same flex row
 
 - Tab row: `display: flex`, `alignItems: center`, `justifyContent: space-between`
 - Tabs group: `display: flex`, `gap: 0` (existing)
-- Pills group: `display: flex`, `gap: 8px`, `alignItems: center`, `paddingBottom: 10px` (aligns with tab bottom padding)
+- Pills group: `display: flex`, `gap: 8px`, `alignItems: center`, `paddingBottom: 8px` (aligns with tab bottom padding)
 
 ### Churn tab (modified)
 
