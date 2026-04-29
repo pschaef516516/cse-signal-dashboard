@@ -1,6 +1,7 @@
 export function groupByField(rows, field) {
   return rows.reduce((acc, row) => {
     const key = row[field]
+    if (key == null) return acc  // skip null and undefined
     return { ...acc, [key]: (acc[key] ?? 0) + 1 }
   }, {})
 }
@@ -33,6 +34,7 @@ export function groupByWeek(rows) {
 
   rows.forEach((row) => {
     const date = new Date(row.created_at)
+    if (isNaN(date)) return  // skip rows with bad timestamps
     const week = getISOWeekLabel(date)
     if (!weekMap[week]) {
       weekMap[week] = { week, churn: 0, enrollment: 0, upsell: 0 }
