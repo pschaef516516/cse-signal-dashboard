@@ -5,7 +5,7 @@ import { countByField } from '../../utils/aggregate'
 
 const COLORS = ['#0057FF', '#3378FF', '#6699FF', '#99BBFF', '#B2CDFF', '#CCdDFF', '#E3ECFF']
 
-export default function CommunityChart({ signals }) {
+export default function CommunityChart({ signals, onBarClick }) {
   const data = countByField(signals, 'source')
 
   if (data.length === 0) {
@@ -18,12 +18,17 @@ export default function CommunityChart({ signals }) {
         layout="vertical"
         data={data}
         margin={{ top: 4, right: 32, left: 8, bottom: 4 }}
+        style={onBarClick ? { cursor: 'pointer' } : undefined}
       >
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
         <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
         <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 11 }} />
         <Tooltip />
-        <Bar dataKey="count" name="Signals">
+        <Bar
+          dataKey="count"
+          name="Signals"
+          onClick={onBarClick ? (entry) => onBarClick(entry.name) : undefined}
+        >
           {data.map((_, index) => (
             <Cell key={index} fill={COLORS[index % COLORS.length]} />
           ))}
