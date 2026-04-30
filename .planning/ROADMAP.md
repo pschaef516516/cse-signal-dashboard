@@ -15,9 +15,9 @@
 
 **Depends on:** Phase 01
 
-**Plans:** 6 plans
-- [ ] 02-01-PLAN.md — Data layer: filterByDateRange, groupBySourceAndType, export getISOWeekLabel, fetchSignals/fetchPosts column expansion, fetchSignalsByDate, fetchPostsByDate
-- [ ] 02-02-PLAN.md — Presentational components: FilterPills, SignalDrawer, SignalCard, SignalDetail
+**Plans:** 2/6 plans executed
+- [x] 02-01-PLAN.md — Data layer: filterByDateRange, groupBySourceAndType, export getISOWeekLabel, fetchSignals/fetchPosts column expansion, fetchSignalsByDate, fetchPostsByDate
+- [x] 02-02-PLAN.md — Presentational components: FilterPills, SignalDrawer, SignalCard, SignalDetail
 - [ ] 02-03-PLAN.md — Chart onClick wiring + new EnrollmentUpsellSplitChart and clickable EUCommunityChart
 - [ ] 02-04-PLAN.md — App.jsx integration: filter state, drawer wiring, TopOrgsTable removal, E&U enrichment, TABS Browse entry, uniqueOrgs/PostsVsSignalsChart filter fixes
 - [ ] 02-05-PLAN.md — Browse tab: date picker, signals + posts lists, drawer reuse, empty states (D-15–D-20)
