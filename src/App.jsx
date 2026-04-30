@@ -6,9 +6,7 @@ import StatCard from './components/ui/StatCard'
 import PlaceholderPanel from './components/ui/PlaceholderPanel'
 import SectionHeader from './components/ui/SectionHeader'
 import FilterPills from './components/ui/FilterPills'
-import SignalDrawer from './components/ui/SignalDrawer'
-import SignalDetail from './components/ui/SignalDetail'
-import { SignalCardList } from './components/ui/SignalCard'
+import SignalModal from './components/ui/SignalModal'
 import BrowseTab from './components/ui/BrowseTab'
 
 import SignalVolumeChart from './components/charts/SignalVolumeChart'
@@ -47,11 +45,10 @@ export default function App() {
   const [churnFilter, setChurnFilter] = useState(null)
   const [enrollmentFilter, setEnrollmentFilter] = useState(null)
 
-  // Phase 02 — drawer state (per D-04, D-07, D-09)
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [drawerTitle, setDrawerTitle] = useState('')
-  const [drawerSignals, setDrawerSignals] = useState([])
-  const [selectedSignal, setSelectedSignal] = useState(null)
+  // Phase 03 — modal state (replaces drawer state)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalSignals, setModalSignals] = useState([])
+  const [modalIndex, setModalIndex] = useState(0)
 
   useEffect(() => {
     async function load() {
@@ -117,34 +114,21 @@ export default function App() {
   // FIX (cross-AI review HIGH #2): uniqueOrgs must come from the FILTERED rows, not all signals.
   const uniqueOrgs = getUniqueOrgs(tabSignals, isChurn ? ['churn'] : ['enrollment'])
 
-  // Phase 02 — drawer open/close helpers (per RESEARCH.md Pitfall 2)
-  const tabLabel = isChurn ? 'Churn' : 'Enrollment & Upsell'
-
-  function openDrawer(title, filteredSignals) {
-    setDrawerTitle(title)
-    setDrawerSignals(filteredSignals)
-    setSelectedSignal(null)
-    setDrawerOpen(true)
+  // Phase 03 — modal open/close helpers
+  function openModal(filteredSignals, startIndex = 0) {
+    setModalSignals(filteredSignals)
+    setModalIndex(startIndex)
+    setModalOpen(true)
   }
 
-  function closeDrawer() {
-    setDrawerOpen(false)
-    setSelectedSignal(null)
+  function closeModal() {
+    setModalOpen(false)
   }
 
-  // Phase 02 — D-18: Browse tab signal-row click opens drawer directly in detail mode.
-  // drawerSignals is set to a single-element array so "Back to signals" still works.
-  function openSignalDetail(signal) {
-    setDrawerTitle('Browse · Signal Detail')
-    setDrawerSignals([signal])
-    setSelectedSignal(signal)
-    setDrawerOpen(true)
-  }
-
-  // Phase 02 — chart click handlers (per D-05)
+  // Phase 03 — chart click handlers open modal instead of drawer
   function handleCommunityClick(sourceName) {
     const filtered = tabSignals.filter((s) => s.source === sourceName)
-    openDrawer(`${sourceName} · ${tabLabel} Signals`, filtered)
+    openModal(filtered, 0)
   }
 
   function handleWeekClick(weekLabel) {
@@ -152,13 +136,12 @@ export default function App() {
       if (!s.created_at) return false
       return getISOWeekLabel(new Date(s.created_at)) === weekLabel
     })
-    openDrawer(`Week of ${formatWeekLabel(weekLabel)} · ${tabLabel} Signals`, filtered)
+    openModal(filtered, 0)
   }
 
   function handleSeverityClick(level) {
     const filtered = tabSignals.filter((s) => s.severity === level)
-    const display = level ? level.charAt(0).toUpperCase() + level.slice(1) : level
-    openDrawer(`${display} Severity · ${tabLabel} Signals`, filtered)
+    openModal(filtered, 0)
   }
 
   return (
@@ -326,19 +309,24 @@ export default function App() {
 
         {isBrowse && (
           <div style={{ marginBottom: 32 }}>
-            <BrowseTab onSignalClick={openSignalDetail} />
+            <BrowseTab onSignalClick={(signal, allSignals) => {
+              const list = allSignals && allSignals.length > 0 ? allSignals : [signal]
+              const idx = list.indexOf(signal)
+              openModal(list, idx >= 0 ? idx : 0)
+            }} />
           </div>
         )}
 
       </div>
 
-      <SignalDrawer open={drawerOpen} title={drawerTitle} onClose={closeDrawer}>
-        {selectedSignal ? (
-          <SignalDetail signal={selectedSignal} onBack={() => setSelectedSignal(null)} />
-        ) : (
-          <SignalCardList signals={drawerSignals} onSelect={(s) => setSelectedSignal(s)} />
-        )}
-      </SignalDrawer>
+      <SignalModal
+        open={modalOpen}
+        signals={modalSignals}
+        currentIndex={modalIndex}
+        onClose={closeModal}
+        onPrev={() => setModalIndex((i) => Math.max(0, i - 1))}
+        onNext={() => setModalIndex((i) => Math.min(modalSignals.length - 1, i + 1))}
+      />
     </div>
   )
 }
