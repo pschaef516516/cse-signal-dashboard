@@ -18,6 +18,7 @@ import ConfidenceHistogram from './components/charts/ConfidenceHistogram'
 import SeverityChart from './components/charts/SeverityChart'
 import EnrollmentUpsellSplitChart from './components/charts/EnrollmentUpsellSplitChart'
 import EUCommunityChart from './components/charts/EUCommunityChart'
+import CategoryBreakdownChart from './components/charts/CategoryBreakdownChart'
 
 const TABS = [
   { id: 'churn', label: 'Churn' },
@@ -138,6 +139,11 @@ export default function App() {
 
   const highSeverity = tabSignals.filter((s) => s.severity === 'high').length
 
+  const preventableCount = tabSignals.filter((s) => s.preventability === 'high').length
+  const preventablePct = tabSignals.length > 0
+    ? Math.round((preventableCount / tabSignals.length) * 100)
+    : 0
+
   // FIX (cross-AI review HIGH #2): uniqueOrgs must come from the FILTERED rows, not all signals.
   const uniqueOrgs = getUniqueOrgs(tabSignals, isChurn ? ['churn'] : ['enrollment'])
 
@@ -168,6 +174,11 @@ export default function App() {
 
   function handleSeverityClick(level) {
     const filtered = tabSignals.filter((s) => s.severity === level)
+    openModal(filtered, 0)
+  }
+
+  function handleCategoryClick(category) {
+    const filtered = tabSignals.filter((s) => s.category === category)
     openModal(filtered, 0)
   }
 
@@ -253,6 +264,13 @@ export default function App() {
                 />
                 <StatCard title="Posts Ingested" value={filteredPosts.length} subtitle="All communities" />
                 <StatCard title="Signal Rate" value={`${signalRate}%`} subtitle="Posts converted to signals" />
+                {isChurn && (
+                  <StatCard
+                    title="% Preventable Churn"
+                    value={`${preventablePct}%`}
+                    subtitle={`${preventableCount} of ${tabSignals.length} signals`}
+                  />
+                )}
                 {!isChurn && (
                   <>
                     <StatCard title="Enrollment Signals" value={tabSignals.filter((s) => s.signal_type === 'enrollment' && s.category !== 'enrollment_upsell_opportunity').length} />
@@ -292,6 +310,20 @@ export default function App() {
                   <EUCommunityChart signals={tabSignals} onBarClick={handleCommunityClick} />
                 </Panel>
               )}
+            </div>
+
+            {/* Signal Categories */}
+            <div style={{ marginBottom: 32 }}>
+              <SectionHeader
+                title="Signal Categories"
+                subtitle={isChurn ? 'Breakdown of churn signal categories' : 'Breakdown of enrollment signal categories'}
+              />
+              <Panel title="Click a category to view its signals">
+                <CategoryBreakdownChart
+                  signals={tabSignals}
+                  onBarClick={handleCategoryClick}
+                />
+              </Panel>
             </div>
 
             {/* Match & Quality */}
