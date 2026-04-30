@@ -4,16 +4,19 @@
 import { normalizeSource } from '../../config/sourceMappings'
 import { formatDate, formatConfidence } from '../../utils/format'
 
-// Priority chain: signal.status → signal.customer_status → churn_date fallback.
-// Returns a colored pill or null if status is unknown.
+// customer_status is the account health field; signal.status is pipeline routing state ("processed" etc).
+// Churned = churn_date present OR customer_status contains "churn".
+// Active = customer_status is "active" OR active_subscriptions > 0 (no churn_date).
 function StatusBadge({ signal }) {
-  const raw = signal.status || signal.customer_status || null
+  const customerStatus = (signal.customer_status || '').toLowerCase()
   const isChurned =
-    (raw && raw.toLowerCase().includes('churn')) ||
-    (!raw && Boolean(signal.churn_date))
+    Boolean(signal.churn_date) ||
+    customerStatus.includes('churn')
   const isActive =
-    (raw && raw.toLowerCase() === 'active') ||
-    (!raw && !signal.churn_date)
+    !isChurned && (
+      customerStatus === 'active' ||
+      (signal.active_subscriptions != null && Number(signal.active_subscriptions) > 0)
+    )
 
   if (!isChurned && !isActive) return null
 
