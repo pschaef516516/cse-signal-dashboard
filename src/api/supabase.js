@@ -15,15 +15,18 @@ async function fetchSupabase(path) {
   return response.json()
 }
 
-// Fetch all signals — only columns the dashboard needs
-// limit=10000 overrides the default 1,000-row cap
+// Fetch all signals — only columns the dashboard needs.
+// Phase 02 (D-08): added key_quote, summary, suggested_action for the SignalDetail view.
+// limit=10000 overrides the default 1,000-row cap.
 export async function fetchSignals() {
   return fetchSupabase(
-    'signals?select=id,created_at,signal_type,source,match_method,org_name,confidence,severity,routed_at&limit=10000'
+    'signals?select=id,created_at,signal_type,source,match_method,org_name,confidence,severity,routed_at,key_quote,summary,suggested_action&limit=10000'
   )
 }
 
-// Fetch all posts with pagination (server caps at 1,000 rows per request)
+// Fetch all posts with pagination (server caps at 1,000 rows per request).
+// Phase 02 (D-19): added id, org_name, content so the Browse tab can render
+// posts list rows with an org column and a 120-char content preview.
 export async function fetchPosts() {
   const PAGE_SIZE = 1000
   const all = []
@@ -31,7 +34,7 @@ export async function fetchPosts() {
 
   while (true) {
     const page = await fetchSupabase(
-      `posts?select=captured_date,source&limit=${PAGE_SIZE}&offset=${offset}`
+      `posts?select=id,captured_date,source,org_name,content&limit=${PAGE_SIZE}&offset=${offset}`
     )
     all.push(...page)
     if (page.length < PAGE_SIZE) break
@@ -39,4 +42,27 @@ export async function fetchPosts() {
   }
 
   return all
+}
+
+// Phase 02 (D-15, D-17): Browse tab — fetch signals captured on a specific date.
+// `date` is a "YYYY-MM-DD" string. We use PostgREST's gte/lt range on created_at
+// to capture all signals whose timestamp falls on that calendar day (UTC boundary
+// — acceptable for an internal dashboard).
+export async function fetchSignalsByDate(date) {
+  if (!date) return []
+  const start = `${date}T00:00:00`
+  const end = `${date}T23:59:59`
+  return fetchSupabase(
+    `signals?select=id,created_at,signal_type,source,match_method,org_name,confidence,severity,routed_at,key_quote,summary,suggested_action&created_at=gte.${start}&created_at=lte.${end}&limit=10000`
+  )
+}
+
+// Phase 02 (D-15, D-17): Browse tab — fetch posts captured on a specific date.
+// `date` is a "YYYY-MM-DD" string. Posts use captured_date which is a date-only
+// column, so we can use eq. directly.
+export async function fetchPostsByDate(date) {
+  if (!date) return []
+  return fetchSupabase(
+    `posts?select=id,captured_date,source,org_name,content&captured_date=eq.${date}&limit=10000`
+  )
 }
