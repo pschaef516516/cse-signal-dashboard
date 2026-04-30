@@ -9,6 +9,7 @@ import SectionHeader from './components/ui/SectionHeader'
 import FilterPills from './components/ui/FilterPills'
 import SignalModal from './components/ui/SignalModal'
 import BrowseTab from './components/ui/BrowseTab'
+import PipelineTab from './components/ui/PipelineTab'
 
 import SignalVolumeChart from './components/charts/SignalVolumeChart'
 import CommunityChart from './components/charts/CommunityChart'
@@ -22,6 +23,7 @@ const TABS = [
   { id: 'churn', label: 'Churn' },
   { id: 'enrollment', label: 'Enrollment & Upsell' },
   { id: 'browse', label: 'Browse' },
+  { id: 'pipeline', label: 'Pipeline' },
 ]
 
 function Panel({ title, children }) {
@@ -108,6 +110,7 @@ export default function App() {
   // Phase 03 — apply tab type filter, then calendar-anchored time filter (per D-10, D-11)
   const isChurn = activeTab === 'churn'
   const isBrowse = activeTab === 'browse'
+  const isPipeline = activeTab === 'pipeline'
   const activeTimeFilter = isChurn ? churnTimeFilter : enrollmentTimeFilter
 
   const tabSignalsByType = isChurn
@@ -207,7 +210,7 @@ export default function App() {
                 )
               })}
             </div>
-            {!isBrowse && (
+            {!isBrowse && !isPipeline && (
               <FilterPills
                 value={isChurn ? churnTimeFilter : enrollmentTimeFilter}
                 onChange={(newFilter) => {
@@ -223,7 +226,7 @@ export default function App() {
       {/* Content */}
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '32px 32px' }}>
 
-        {!isBrowse && (
+        {!isBrowse && !isPipeline && (
           <>
             {/* Key Metrics */}
             <div style={{ marginBottom: 32 }}>
@@ -338,6 +341,12 @@ export default function App() {
               const idx = list.indexOf(signal)
               openModal(list, idx >= 0 ? idx : 0)
             }} />
+          </div>
+        )}
+
+        {isPipeline && (
+          <div style={{ marginBottom: 32 }}>
+            <PipelineTab signals={signals} posts={posts} />
           </div>
         )}
 
