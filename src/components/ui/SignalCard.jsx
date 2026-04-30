@@ -1,5 +1,6 @@
 // Single signal card + list wrapper used inside SignalDrawer.
 // Per D-06: shows org name, source, severity, confidence, match method, created date.
+import { normalizeSource } from '../../config/sourceMappings'
 
 function formatDate(iso) {
   if (!iso) return '—'
@@ -35,10 +36,10 @@ export default function SignalCard({ signal, onClick }) {
       }}
     >
       <p style={{ fontSize: 14, fontWeight: 600, color: '#15181D', margin: 0 }}>
-        {signal.org_name ?? '—'}
+        {signal.org_name ?? 'Unknown'}
       </p>
       <p style={{ fontSize: 12, color: '#6B7487', margin: 0 }}>
-        {signal.source ?? '—'} · Severity: {signal.severity ?? '—'} · Confidence: {formatConfidence(signal.confidence)}
+        {normalizeSource(signal.source)} · Severity: {signal.severity ?? '—'} · Confidence: {formatConfidence(signal.confidence)}
       </p>
       <p style={{ fontSize: 12, color: '#6B7487', margin: 0 }}>
         Match: {signal.match_method ?? '—'} · {formatDate(signal.created_at)}

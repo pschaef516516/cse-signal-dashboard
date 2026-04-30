@@ -1,4 +1,5 @@
 // Detail view rendered inside SignalDrawer (replaces SignalCardList).
+import { normalizeSource } from '../../config/sourceMappings'
 // Per D-09: detail view replaces the list within the same drawer.
 // Per D-10: metadata at top, key_quote as quote block, summary as paragraph, suggested_action as styled callout.
 // Per D-11: back button only — no prev/next arrows.
@@ -45,8 +46,8 @@ const sectionLabelStyle = {
 
 export default function SignalDetail({ signal, onBack }) {
   const rows = [
-    ['Org', signal.org_name],
-    ['Source', signal.source],
+    ['Org', signal.org_name ?? 'Unknown'],
+    ['Source', normalizeSource(signal.source)],
     ['Signal Type', signal.signal_type],
     ['Severity', signal.severity],
     ['Confidence', formatConfidence(signal.confidence)],

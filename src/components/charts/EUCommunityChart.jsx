@@ -2,6 +2,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import { groupBySourceAndType } from '../../utils/aggregate'
+import { normalizeSource } from '../../config/sourceMappings'
 
 // Per D-12: source breakdown for E&U signals — split by enrollment vs upsell per source.
 // Per D-05 (cross-AI review fix): the community-style chart on the E&U tab is also a
@@ -9,7 +10,8 @@ import { groupBySourceAndType } from '../../utils/aggregate'
 // `entry.name` (source) — the drill-down filters by source on the E&U tab.
 // Data shape from groupBySourceAndType: [{ name, enrollment, upsell }, ...] sorted by total desc.
 export default function EUCommunityChart({ signals, onBarClick }) {
-  const data = groupBySourceAndType(signals)
+  const normalized = signals.map((s) => ({ ...s, source: normalizeSource(s.source) }))
+  const data = groupBySourceAndType(normalized)
 
   if (data.length === 0) {
     return <p className="text-sm text-gray-400">No data yet.</p>

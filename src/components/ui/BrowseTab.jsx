@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchSignalsByDate, fetchPostsByDate } from '../../api/supabase'
+import { normalizeSource } from '../../config/sourceMappings'
 
 // --- Helpers ----------------------------------------------------------------
 
@@ -217,10 +218,10 @@ export default function BrowseTab({ onSignalClick }) {
                   if (e.key === 'Enter' || e.key === ' ') onSignalClick(s)
                 }}
               >
-                <span>{s.org_name ?? '—'}</span>
+                <span>{s.org_name ?? 'Unknown'}</span>
                 <span>{s.signal_type ?? '—'}</span>
                 <span>{s.severity ?? '—'}</span>
-                <span>{s.source ?? '—'}</span>
+                <span>{normalizeSource(s.source)}</span>
                 <span>{formatConfidence(s.confidence)}</span>
                 <span>{formatDate(s.created_at)}</span>
               </div>
@@ -239,14 +240,14 @@ export default function BrowseTab({ onSignalClick }) {
           <div>
             <div style={postsHeaderRowStyle}>
               <span>Captured</span>
-              <span>Org</span>
+              <span>Author</span>
               <span>Content Preview</span>
             </div>
             {postsForDate.map((p) => (
               <div key={p.id} style={postsRowStyle}>
                 <span>{formatDate(p.captured_date)}</span>
-                <span>{p.org_name ?? '—'}</span>
-                <span>{previewText(p.content)}</span>
+                <span>{p.author_name ?? 'Unknown'}</span>
+                <span>{previewText(p.text)}</span>
               </div>
             ))}
           </div>

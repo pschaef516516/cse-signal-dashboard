@@ -10,7 +10,8 @@ const headers = {
 async function fetchSupabase(path) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers })
   if (!response.ok) {
-    throw new Error(`Supabase fetch failed: ${response.status} ${response.statusText}`)
+    const body = await response.text().catch(() => '')
+    throw new Error(`Supabase fetch failed: ${response.status} — ${body}`)
   }
   return response.json()
 }
@@ -34,7 +35,7 @@ export async function fetchPosts() {
 
   while (true) {
     const page = await fetchSupabase(
-      `posts?select=id,captured_date,source,org_name,content&limit=${PAGE_SIZE}&offset=${offset}`
+      `posts?select=id,captured_date,source,author_name,text&limit=${PAGE_SIZE}&offset=${offset}`
     )
     all.push(...page)
     if (page.length < PAGE_SIZE) break
@@ -63,6 +64,6 @@ export async function fetchSignalsByDate(date) {
 export async function fetchPostsByDate(date) {
   if (!date) return []
   return fetchSupabase(
-    `posts?select=id,captured_date,source,org_name,content&captured_date=eq.${date}&limit=10000`
+    `posts?select=id,captured_date,source,author_name,text&captured_date=eq.${date}&limit=10000`
   )
 }

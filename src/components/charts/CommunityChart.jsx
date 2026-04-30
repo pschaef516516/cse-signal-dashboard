@@ -2,11 +2,13 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
 import { countByField } from '../../utils/aggregate'
+import { normalizeSource } from '../../config/sourceMappings'
 
 const COLORS = ['#0057FF', '#3378FF', '#6699FF', '#99BBFF', '#B2CDFF', '#CCdDFF', '#E3ECFF']
 
 export default function CommunityChart({ signals, onBarClick }) {
-  const data = countByField(signals, 'source')
+  const normalized = signals.map((s) => ({ ...s, source: normalizeSource(s.source) }))
+  const data = countByField(normalized, 'source')
 
   if (data.length === 0) {
     return <p className="text-sm text-gray-400">No data yet.</p>
