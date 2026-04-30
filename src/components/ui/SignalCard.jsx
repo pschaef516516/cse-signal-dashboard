@@ -36,7 +36,7 @@ export default function SignalCard({ signal, onClick }) {
       }}
     >
       <p style={{ fontSize: 14, fontWeight: 600, color: '#15181D', margin: 0 }}>
-        {signal.org_name ?? 'Unknown'}
+        {signal.org_name || 'Unknown'}
       </p>
       <p style={{ fontSize: 12, color: '#6B7487', margin: 0 }}>
         {normalizeSource(signal.source)} · Severity: {signal.severity ?? '—'} · Confidence: {formatConfidence(signal.confidence)}

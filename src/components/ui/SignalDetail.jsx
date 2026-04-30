@@ -46,7 +46,7 @@ const sectionLabelStyle = {
 
 export default function SignalDetail({ signal, onBack }) {
   const rows = [
-    ['Org', signal.org_name ?? 'Unknown'],
+    ['Org', signal.org_name || 'Unknown'],
     ['Source', normalizeSource(signal.source)],
     ['Signal Type', signal.signal_type],
     ['Severity', signal.severity],

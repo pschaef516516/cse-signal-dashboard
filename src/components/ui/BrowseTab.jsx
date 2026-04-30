@@ -218,7 +218,7 @@ export default function BrowseTab({ onSignalClick }) {
                   if (e.key === 'Enter' || e.key === ' ') onSignalClick(s)
                 }}
               >
-                <span>{s.org_name ?? 'Unknown'}</span>
+                <span>{s.org_name || 'Unknown'}</span>
                 <span>{s.signal_type ?? '—'}</span>
                 <span>{s.severity ?? '—'}</span>
                 <span>{normalizeSource(s.source)}</span>
@@ -246,7 +246,7 @@ export default function BrowseTab({ onSignalClick }) {
             {postsForDate.map((p) => (
               <div key={p.id} style={postsRowStyle}>
                 <span>{formatDate(p.captured_date)}</span>
-                <span>{p.author_name ?? 'Unknown'}</span>
+                <span>{p.author_name || 'Unknown'}</span>
                 <span>{previewText(p.text)}</span>
               </div>
             ))}
