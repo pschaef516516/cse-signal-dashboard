@@ -3,12 +3,14 @@ import {
 } from 'recharts'
 import { groupByWeek } from '../../utils/aggregate'
 
-export default function SignalVolumeChart({ signals, onBarClick }) {
+export default function SignalVolumeChart({ signals, onBarClick, mode = 'all' }) {
   const data = groupByWeek(signals)
 
   if (data.length === 0) {
     return <p className="text-sm text-gray-400">No data yet.</p>
   }
+
+  const click = onBarClick ? (entry) => onBarClick(entry.week) : undefined
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -18,9 +20,15 @@ export default function SignalVolumeChart({ signals, onBarClick }) {
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
         <Tooltip />
         <Legend />
-        <Bar dataKey="churn" stackId="a" fill="#D81860" name="Churn" onClick={onBarClick ? (entry) => onBarClick(entry.week) : undefined} />
-        <Bar dataKey="enrollment" stackId="a" fill="#0057FF" name="Enrollment" onClick={onBarClick ? (entry) => onBarClick(entry.week) : undefined} />
-        <Bar dataKey="upsell" stackId="a" fill="#623CC9" name="Upsell" onClick={onBarClick ? (entry) => onBarClick(entry.week) : undefined} />
+        {(mode === 'churn') && (
+          <Bar dataKey="churn" stackId="a" fill="#D81860" name="Churn" onClick={click} />
+        )}
+        {(mode === 'eu') && (
+          <Bar dataKey="enrollment" stackId="a" fill="#0057FF" name="Enrollment" onClick={click} />
+        )}
+        {(mode === 'eu') && (
+          <Bar dataKey="upsell" stackId="a" fill="#623CC9" name="Upsell" onClick={click} />
+        )}
       </BarChart>
     </ResponsiveContainer>
   )

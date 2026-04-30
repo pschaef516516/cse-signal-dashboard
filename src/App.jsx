@@ -263,7 +263,7 @@ export default function App() {
             <div style={{ marginBottom: 32 }}>
               <SectionHeader title="Signal Volume" subtitle="Signals detected per week" />
               <Panel title="Signals by Week">
-                <SignalVolumeChart signals={tabSignals} onBarClick={handleWeekClick} />
+                <SignalVolumeChart signals={tabSignals} onBarClick={handleWeekClick} mode={isChurn ? 'churn' : 'eu'} />
               </Panel>
             </div>
 
