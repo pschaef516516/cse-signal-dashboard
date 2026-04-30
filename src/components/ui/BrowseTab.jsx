@@ -197,12 +197,12 @@ export default function BrowseTab({ onSignalClick }) {
             {signalsForDate.map((s) => (
               <div
                 key={s.id}
-                onClick={() => onSignalClick(s)}
+                onClick={() => onSignalClick(s, signalsForDate)}
                 style={tableRowStyle(true)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') onSignalClick(s)
+                  if (e.key === 'Enter' || e.key === ' ') onSignalClick(s, signalsForDate)
                 }}
               >
                 <span>{s.org_name || 'Unknown'}</span>
