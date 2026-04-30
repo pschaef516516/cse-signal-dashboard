@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchSignals, fetchPosts } from './api/supabase'
-import { getUniqueOrgs, filterByDateRange, getISOWeekLabel } from './utils/aggregate'
+import { getUniqueOrgs, filterByDateRange, getISOWeekLabel, formatWeekLabel } from './utils/aggregate'
 
 import StatCard from './components/ui/StatCard'
 import PlaceholderPanel from './components/ui/PlaceholderPanel'
@@ -152,7 +152,7 @@ export default function App() {
       if (!s.created_at) return false
       return getISOWeekLabel(new Date(s.created_at)) === weekLabel
     })
-    openDrawer(`Week of ${weekLabel} · ${tabLabel} Signals`, filtered)
+    openDrawer(`Week of ${formatWeekLabel(weekLabel)} · ${tabLabel} Signals`, filtered)
   }
 
   function handleSeverityClick(level) {

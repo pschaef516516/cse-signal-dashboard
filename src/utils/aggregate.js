@@ -66,6 +66,23 @@ export function getISOWeekLabel(date) {
   return `${year}-W${String(week).padStart(2, '0')}`
 }
 
+// Converts an ISO week key ("2026-W17") to a human-readable label ("Apr 20").
+// Jan 4 is always in ISO week 1, so we use it to anchor the Monday of week 1.
+export function formatWeekLabel(isoWeek) {
+  if (!isoWeek) return isoWeek
+  const [yearStr, weekStr] = isoWeek.split('-W')
+  const year = parseInt(yearStr, 10)
+  const week = parseInt(weekStr, 10)
+  if (isNaN(year) || isNaN(week)) return isoWeek
+  const jan4 = new Date(year, 0, 4)
+  const dayOfWeek = jan4.getDay() || 7
+  const week1Mon = new Date(jan4)
+  week1Mon.setDate(jan4.getDate() - dayOfWeek + 1)
+  const targetMon = new Date(week1Mon)
+  targetMon.setDate(week1Mon.getDate() + (week - 1) * 7)
+  return targetMon.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 // New in Phase 02
 //
 // Date semantics: cutoff is `now - days * 24h`; rows whose dateField parses to a
