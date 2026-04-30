@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchSignals, fetchPosts } from './api/supabase'
-import { getUniqueOrgs, filterByDateRange, getISOWeekLabel, formatWeekLabel } from './utils/aggregate'
+import { getUniqueOrgs, getISOWeekLabel, formatWeekLabel } from './utils/aggregate'
+import { getTodayRange, getYesterdayRange, getWeekRange, getMonthRange, filterByRange } from './utils/dateRanges'
 
 import StatCard from './components/ui/StatCard'
 import PlaceholderPanel from './components/ui/PlaceholderPanel'
@@ -41,9 +42,9 @@ export default function App() {
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('churn')
 
-  // Phase 02 — time period filter (per D-02, D-03). null = All.
-  const [churnFilter, setChurnFilter] = useState(null)
-  const [enrollmentFilter, setEnrollmentFilter] = useState(null)
+  // Phase 03 — calendar-anchored time filter (per D-10, D-11). mode: 'all' = all-time.
+  const [churnTimeFilter, setChurnTimeFilter] = useState({ mode: 'all', weekValue: null, monthValue: null })
+  const [enrollmentTimeFilter, setEnrollmentTimeFilter] = useState({ mode: 'all', weekValue: null, monthValue: null })
 
   // Phase 03 — modal state (replaces drawer state)
   const [modalOpen, setModalOpen] = useState(false)
@@ -81,22 +82,45 @@ export default function App() {
     )
   }
 
-  // Phase 02 — apply tab type filter, then date range filter (per D-02)
+  // Converts a { mode, weekValue, monthValue } filter object into a filtered array.
+  // Routes to the correct date range helper based on mode.
+  function filterByTimeFilter(rows, filter, dateField = 'created_at') {
+    if (!filter || filter.mode === 'all') return rows
+    if (filter.mode === 'today') {
+      return filterByRange(rows, getTodayRange(), dateField)
+    }
+    if (filter.mode === 'yesterday') {
+      return filterByRange(rows, getYesterdayRange(), dateField)
+    }
+    if (filter.mode === 'week') {
+      const weekKey = filter.weekValue || null
+      if (!weekKey) return rows  // no week selected yet — show all
+      return filterByRange(rows, getWeekRange(weekKey), dateField)
+    }
+    if (filter.mode === 'month') {
+      const monthKey = filter.monthValue || null
+      if (!monthKey) return rows  // no month selected yet — show all
+      return filterByRange(rows, getMonthRange(monthKey), dateField)
+    }
+    return rows
+  }
+
+  // Phase 03 — apply tab type filter, then calendar-anchored time filter (per D-10, D-11)
   const isChurn = activeTab === 'churn'
   const isBrowse = activeTab === 'browse'
-  const activeFilter = isChurn ? churnFilter : enrollmentFilter
+  const activeTimeFilter = isChurn ? churnTimeFilter : enrollmentTimeFilter
 
   const tabSignalsByType = isChurn
     ? signals.filter((s) => s.signal_type === 'churn')
     : signals.filter((s) => s.signal_type === 'enrollment')
 
-  // tabSignals = tab-typed signals filtered by active date range
-  const tabSignals = filterByDateRange(tabSignalsByType, activeFilter)
+  // tabSignals = tab-typed signals filtered by active calendar time filter
+  const tabSignals = filterByTimeFilter(tabSignalsByType, activeTimeFilter)
 
   // Posts use captured_date — separate filter call (per RESEARCH.md Pitfall 1)
-  const filteredPosts = filterByDateRange(posts, activeFilter, 'captured_date')
+  const filteredPosts = filterByTimeFilter(posts, activeTimeFilter, 'captured_date')
 
-  const filteredAllSignals = filterByDateRange(signals, activeFilter)
+  const filteredAllSignals = filterByTimeFilter(signals, activeTimeFilter)
   const signalRate = filteredPosts.length > 0
     ? Math.round((filteredAllSignals.length / filteredPosts.length) * 100)
     : 0
@@ -185,10 +209,10 @@ export default function App() {
             </div>
             {!isBrowse && (
               <FilterPills
-                value={isChurn ? churnFilter : enrollmentFilter}
-                onChange={(days) => {
-                  if (isChurn) setChurnFilter(days)
-                  else setEnrollmentFilter(days)
+                value={isChurn ? churnTimeFilter : enrollmentTimeFilter}
+                onChange={(newFilter) => {
+                  if (isChurn) setChurnTimeFilter(newFilter)
+                  else setEnrollmentTimeFilter(newFilter)
                 }}
               />
             )}
