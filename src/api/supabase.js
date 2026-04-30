@@ -21,7 +21,7 @@ async function fetchSupabase(path) {
 // limit=10000 overrides the default 1,000-row cap.
 export async function fetchSignals() {
   return fetchSupabase(
-    'signals?select=id,created_at,signal_type,source,match_method,org_name,confidence,severity,routed_at,key_quote,summary,suggested_action&limit=10000'
+    'signals?select=id,created_at,captured_date,signal_type,source,record_type,match_method,org_id,org_uuid,org_name,org_size,confidence,severity,preventability,routed_at,routing_reason,key_quote,summary,suggested_action,text,author_name,author_profile_url,post_url,parent_post_url,plan_name,plan_tier,enrollment_date,churn_date,vertical,phone,segment,active_subscriptions,status,customer_status,category,email,user_id&limit=10000'
   )
 }
 
@@ -54,7 +54,7 @@ export async function fetchSignalsByDate(date) {
   const start = `${date}T00:00:00`
   const end = `${date}T23:59:59`
   return fetchSupabase(
-    `signals?select=id,created_at,signal_type,source,match_method,org_name,confidence,severity,routed_at,key_quote,summary,suggested_action&created_at=gte.${start}&created_at=lte.${end}&limit=10000`
+    `signals?select=id,created_at,captured_date,signal_type,source,record_type,match_method,org_id,org_uuid,org_name,org_size,confidence,severity,preventability,routed_at,routing_reason,key_quote,summary,suggested_action,text,author_name,author_profile_url,post_url,parent_post_url,plan_name,plan_tier,enrollment_date,churn_date,vertical,phone,segment,active_subscriptions,status,customer_status,category,email,user_id&created_at=gte.${start}&created_at=lte.${end}&limit=10000`
   )
 }
 
