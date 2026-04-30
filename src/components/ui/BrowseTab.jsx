@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { fetchSignalsByDate, fetchPostsByDate } from '../../api/supabase'
+import { fetchSignals, fetchPosts, fetchSignalsByDate, fetchPostsByDate, fetchSignalsByRange, fetchPostsByRange } from '../../api/supabase'
+import { getRecentWeeks, getWeekRange, getRecentMonths, getMonthRange, formatWeekRangeLabel, formatMonthLabel } from '../../utils/dateRanges'
 import { normalizeSource } from '../../config/sourceMappings'
 import { formatDate, formatConfidence } from '../../utils/format'
+import BrowseFilterPill from './BrowseFilterPill'
 
 // --- Helpers ----------------------------------------------------------------
 
@@ -16,13 +18,13 @@ function yesterdayString() {
 }
 
 // Validate the date string before passing to fetch helpers (defense-in-depth
-// against the T-02-13 injection threat — PostgREST also rejects invalid dates,
-// but this guard avoids unnecessary network round-trips).
+// against injection — PostgREST also rejects invalid dates, but this guard
+// avoids unnecessary network round-trips).
 function isValidDateString(s) {
   return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)
 }
 
-// First 120 characters of the post content, with an ellipsis if truncated (D-19).
+// First 120 characters of the post content, with an ellipsis if truncated.
 function previewText(content) {
   if (!content) return '—'
   const s = String(content)
@@ -109,32 +111,97 @@ const emptyStateStyle = {
 // --- Component --------------------------------------------------------------
 
 export default function BrowseTab({ onSignalClick }) {
+  // Granularity selection — which time period mode is active.
+  const [granularity, setGranularity] = useState('day') // 'day' | 'week' | 'month' | 'all'
+
+  // Day granularity — existing date picker, defaults to yesterday.
   const [selectedDate, setSelectedDate] = useState(yesterdayString())
+
+  // Week granularity — ISO week string ('YYYY-WXX') or null (uses weekOptions[0]).
+  const [selectedWeek, setSelectedWeek] = useState(null)
+
+  // Month granularity — 'YYYY-MM' string or null (uses monthOptions[0]).
+  const [selectedMonth, setSelectedMonth] = useState(null)
+
+  // Raw data from the server for the active period.
   const [signalsForDate, setSignalsForDate] = useState([])
   const [postsForDate, setPostsForDate] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Refetch whenever the date changes (D-16: date picker drives both lists).
-  useEffect(() => {
-    if (!isValidDateString(selectedDate)) {
-      setSignalsForDate([])
-      setPostsForDate([])
-      return
-    }
+  // Filter state — signals only (D-07). Posts section has no filters.
+  const [sourceFilter, setSourceFilter] = useState(null)
+  const [severityFilter, setSeverityFilter] = useState(null)
+  const [typeFilter, setTypeFilter] = useState(null)
+  const [confidenceFilter, setConfidenceFilter] = useState(null)
 
+  // Reset all filter pills whenever the granularity tab changes.
+  useEffect(() => {
+    setSourceFilter(null)
+    setSeverityFilter(null)
+    setTypeFilter(null)
+    setConfidenceFilter(null)
+  }, [granularity])
+
+  // Precompute option lists for the week/month selects.
+  const weekOptions = getRecentWeeks(12)   // ['2026-W17', '2026-W16', ...]
+  const monthOptions = getRecentMonths(12) // ['2026-04', '2026-03', ...]
+
+  // Fetch data whenever granularity or the relevant picker value changes.
+  useEffect(() => {
     let cancelled = false
+
     async function load() {
       setLoading(true)
       setError(null)
       try {
-        const [s, p] = await Promise.all([
-          fetchSignalsByDate(selectedDate),
-          fetchPostsByDate(selectedDate),
-        ])
+        let signals = []
+        let posts = []
+
+        if (granularity === 'day') {
+          if (!isValidDateString(selectedDate)) {
+            setSignalsForDate([])
+            setPostsForDate([])
+            return
+          }
+          ;[signals, posts] = await Promise.all([
+            fetchSignalsByDate(selectedDate),
+            fetchPostsByDate(selectedDate),
+          ])
+        } else if (granularity === 'week') {
+          const week = selectedWeek || weekOptions[0]
+          if (week) {
+            const { start, end } = getWeekRange(week)
+            const startISO = `${start.toISOString().slice(0, 10)}T00:00:00`
+            const endISO = `${end.toISOString().slice(0, 10)}T23:59:59`
+            const startDate = start.toISOString().slice(0, 10)
+            const endDate = end.toISOString().slice(0, 10)
+            ;[signals, posts] = await Promise.all([
+              fetchSignalsByRange(startISO, endISO),
+              fetchPostsByRange(startDate, endDate),
+            ])
+          }
+        } else if (granularity === 'month') {
+          const month = selectedMonth || monthOptions[0]
+          if (month) {
+            const { start, end } = getMonthRange(month)
+            const startISO = `${start.toISOString().slice(0, 10)}T00:00:00`
+            const endISO = `${end.toISOString().slice(0, 10)}T23:59:59`
+            const startDate = start.toISOString().slice(0, 10)
+            const endDate = end.toISOString().slice(0, 10)
+            ;[signals, posts] = await Promise.all([
+              fetchSignalsByRange(startISO, endISO),
+              fetchPostsByRange(startDate, endDate),
+            ])
+          }
+        } else if (granularity === 'all') {
+          // All Time — fetch everything without a date constraint (D-09).
+          ;[signals, posts] = await Promise.all([fetchSignals(), fetchPosts()])
+        }
+
         if (cancelled) return
-        setSignalsForDate(s)
-        setPostsForDate(p)
+        setSignalsForDate(signals)
+        setPostsForDate(posts)
       } catch (err) {
         if (cancelled) return
         setError(err.message)
@@ -142,48 +209,132 @@ export default function BrowseTab({ onSignalClick }) {
         if (!cancelled) setLoading(false)
       }
     }
+
     load()
     return () => { cancelled = true }
-  }, [selectedDate])
+  }, [granularity, selectedDate, selectedWeek, selectedMonth])
+
+  // --- Filter option lists (derived from raw signal data) -------------------
+
+  const sourceOptions = [...new Set(
+    signalsForDate.map((s) => normalizeSource(s.source)).filter(Boolean)
+  )].sort()
+  const severityOptions = ['low', 'medium', 'high']
+  const typeOptions = ['churn', 'enrollment']
+  const confidenceOptions = ['0.0–0.3', '0.3–0.6', '0.6–0.8', '0.8–1.0']
+
+  // --- Apply active filters to produce the visible signal list (D-07, D-08) --
+
+  const displayedSignals = signalsForDate.filter((s) => {
+    if (sourceFilter && normalizeSource(s.source) !== sourceFilter) return false
+    if (severityFilter && s.severity !== severityFilter) return false
+    if (typeFilter && s.signal_type !== typeFilter) return false
+    if (confidenceFilter) {
+      const conf = parseFloat(s.confidence)
+      const [loStr, hiStr] = confidenceFilter.split('–')
+      const lo = parseFloat(loStr)
+      const hi = parseFloat(hiStr)
+      if (isNaN(conf) || conf < lo || conf > hi) return false
+    }
+    return true
+  })
 
   return (
     <div>
-      {/* Date picker (D-16) */}
-      <div style={{ ...sectionPanelStyle, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <label
-          htmlFor="browse-date-picker"
-          style={{ fontSize: 14, fontWeight: 600, color: '#15181D' }}
-        >
-          Date:
-        </label>
-        <input
-          id="browse-date-picker"
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            fontSize: 14,
-            border: '1px solid #E1E6F2',
-            borderRadius: 8,
-            color: '#15181D',
-            background: '#FFFFFF',
-          }}
-        />
-        {loading && (
-          <span style={{ fontSize: 12, color: '#6B7487' }}>Loading…</span>
+      {/* Granularity tab bar + picker (D-06) */}
+      <div style={{ ...sectionPanelStyle, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* Granularity tab row */}
+        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #E1E6F2', paddingBottom: 12 }}>
+          {['day', 'week', 'month', 'all'].map((g) => {
+            const labels = { day: 'Day', week: 'Week', month: 'Month', all: 'All Time' }
+            const active = granularity === g
+            return (
+              <button
+                key={g}
+                onClick={() => setGranularity(g)}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: active ? '#0057FF' : '#6B7487',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: active ? '2px solid #0057FF' : '2px solid transparent',
+                  cursor: 'pointer',
+                }}
+              >
+                {labels[g]}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Picker row — only shown for day / week / month */}
+        {granularity === 'day' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <label htmlFor="browse-date-picker" style={{ fontSize: 14, fontWeight: 600, color: '#15181D' }}>Date:</label>
+            <input
+              id="browse-date-picker"
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              style={{ padding: '8px 12px', fontSize: 14, border: '1px solid #E1E6F2', borderRadius: 8, color: '#15181D', background: '#FFFFFF' }}
+            />
+          </div>
         )}
-        {error && (
-          <span style={{ fontSize: 12, color: '#D81860' }}>Error: {error}</span>
+
+        {granularity === 'week' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <label style={{ fontSize: 14, fontWeight: 600, color: '#15181D' }}>Week:</label>
+            <select
+              value={selectedWeek || weekOptions[0] || ''}
+              onChange={(e) => setSelectedWeek(e.target.value)}
+              style={{ padding: '8px 12px', fontSize: 14, border: '1px solid #E1E6F2', borderRadius: 8, color: '#15181D', background: '#FFFFFF' }}
+            >
+              {weekOptions.map((w) => (
+                <option key={w} value={w}>{formatWeekRangeLabel(w)}</option>
+              ))}
+            </select>
+          </div>
         )}
+
+        {granularity === 'month' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <label style={{ fontSize: 14, fontWeight: 600, color: '#15181D' }}>Month:</label>
+            <select
+              value={selectedMonth || monthOptions[0] || ''}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              style={{ padding: '8px 12px', fontSize: 14, border: '1px solid #E1E6F2', borderRadius: 8, color: '#15181D', background: '#FFFFFF' }}
+            >
+              {monthOptions.map((m) => (
+                <option key={m} value={m}>{formatMonthLabel(m)}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {loading && <span style={{ fontSize: 12, color: '#6B7487' }}>Loading…</span>}
+        {error && <span style={{ fontSize: 12, color: '#D81860' }}>Error: {error}</span>}
       </div>
 
-      {/* Signals section (D-17, D-18, D-20) */}
+      {/* Signals section with filter pills (D-07, D-08) */}
       <div style={sectionPanelStyle}>
-        <p style={sectionTitleStyle}>Signals ({signalsForDate.length})</p>
+        {/* Title shows filtered count vs total count when filters are active */}
+        <p style={sectionTitleStyle}>
+          Signals ({displayedSignals.length}{displayedSignals.length !== signalsForDate.length ? ` of ${signalsForDate.length}` : ''})
+        </p>
 
-        {signalsForDate.length === 0 ? (
-          <p style={emptyStateStyle}>No signals found for this date</p>
+        {/* Filter pills row */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <BrowseFilterPill label="Source" options={sourceOptions} value={sourceFilter} onChange={setSourceFilter} />
+          <BrowseFilterPill label="Severity" options={severityOptions} value={severityFilter} onChange={setSeverityFilter} />
+          <BrowseFilterPill label="Type" options={typeOptions} value={typeFilter} onChange={setTypeFilter} />
+          <BrowseFilterPill label="Confidence" options={confidenceOptions} value={confidenceFilter} onChange={setConfidenceFilter} />
+        </div>
+
+        {displayedSignals.length === 0 ? (
+          <p style={emptyStateStyle}>No signals found for this period</p>
         ) : (
           <div>
             <div style={tableHeaderRowStyle}>
@@ -194,15 +345,15 @@ export default function BrowseTab({ onSignalClick }) {
               <span>Confidence</span>
               <span>Created</span>
             </div>
-            {signalsForDate.map((s) => (
+            {displayedSignals.map((s) => (
               <div
                 key={s.id}
-                onClick={() => onSignalClick(s, signalsForDate)}
+                onClick={() => onSignalClick(s, displayedSignals)}
                 style={tableRowStyle(true)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') onSignalClick(s, signalsForDate)
+                  if (e.key === 'Enter' || e.key === ' ') onSignalClick(s, displayedSignals)
                 }}
               >
                 <span>{s.org_name || 'Unknown'}</span>
@@ -217,12 +368,12 @@ export default function BrowseTab({ onSignalClick }) {
         )}
       </div>
 
-      {/* Posts section */}
+      {/* Posts section — no filter pills (D-07) */}
       <div style={sectionPanelStyle}>
         <p style={sectionTitleStyle}>Posts ({postsForDate.length})</p>
 
         {postsForDate.length === 0 ? (
-          <p style={emptyStateStyle}>No posts found for this date</p>
+          <p style={emptyStateStyle}>No posts found for this period</p>
         ) : (
           <div>
             <div style={postsHeaderRowStyle}>
