@@ -9,6 +9,7 @@ import FilterPills from './components/ui/FilterPills'
 import SignalDrawer from './components/ui/SignalDrawer'
 import SignalDetail from './components/ui/SignalDetail'
 import { SignalCardList } from './components/ui/SignalCard'
+import BrowseTab from './components/ui/BrowseTab'
 
 import SignalVolumeChart from './components/charts/SignalVolumeChart'
 import CommunityChart from './components/charts/CommunityChart'
@@ -129,6 +130,15 @@ export default function App() {
   function closeDrawer() {
     setDrawerOpen(false)
     setSelectedSignal(null)
+  }
+
+  // Phase 02 — D-18: Browse tab signal-row click opens drawer directly in detail mode.
+  // drawerSignals is set to a single-element array so "Back to signals" still works.
+  function openSignalDetail(signal) {
+    setDrawerTitle('Browse · Signal Detail')
+    setDrawerSignals([signal])
+    setSelectedSignal(signal)
+    setDrawerOpen(true)
   }
 
   // Phase 02 — chart click handlers (per D-05)
@@ -319,6 +329,12 @@ export default function App() {
               </div>
             </div>
           </>
+        )}
+
+        {isBrowse && (
+          <div style={{ marginBottom: 32 }}>
+            <BrowseTab onSignalClick={openSignalDetail} />
+          </div>
         )}
 
       </div>
