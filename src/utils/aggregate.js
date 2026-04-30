@@ -57,11 +57,44 @@ export function getUniqueOrgs(rows, signalTypes) {
   return orgs.size
 }
 
-function getISOWeekLabel(date) {
+export function getISOWeekLabel(date) {
   const d = new Date(date)
   d.setHours(0, 0, 0, 0)
   d.setDate(d.getDate() + 4 - (d.getDay() || 7))
   const year = d.getFullYear()
   const week = Math.ceil(((d - new Date(year, 0, 1)) / 86400000 + 1) / 7)
   return `${year}-W${String(week).padStart(2, '0')}`
+}
+
+// New in Phase 02
+//
+// Date semantics: cutoff is `now - days * 24h`; rows whose dateField parses to a
+// JavaScript Date >= cutoff are kept. For date-only strings like "2026-04-29",
+// `new Date(...)` parses as 00:00 UTC, so a posts row with captured_date equal
+// to today's date is included for any positive `days`. `days = null/undefined/0`
+// returns the array unchanged ("All").
+export function filterByDateRange(rows, days, dateField = 'created_at') {
+  if (!days) return rows
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - days)
+  return rows.filter((row) => {
+    const d = new Date(row[dateField])
+    return !isNaN(d) && d >= cutoff
+  })
+}
+
+export function groupBySourceAndType(rows) {
+  const map = {}
+  rows.forEach((row) => {
+    const source = row.source
+    const type = row.signal_type
+    if (!source || !type) return
+    if (!map[source]) {
+      map[source] = { name: source, enrollment: 0, upsell: 0 }
+    }
+    if (type === 'enrollment' || type === 'upsell') {
+      map[source] = { ...map[source], [type]: map[source][type] + 1 }
+    }
+  })
+  return Object.values(map).sort((a, b) => (b.enrollment + b.upsell) - (a.enrollment + a.upsell))
 }

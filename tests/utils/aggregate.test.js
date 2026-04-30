@@ -1,10 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   groupByField,
   countByField,
   bucketConfidence,
   groupByWeek,
   getUniqueOrgs,
+  filterByDateRange,
+  groupBySourceAndType,
+  getISOWeekLabel,
 } from '../../src/utils/aggregate'
 
 describe('groupByField', () => {
@@ -88,5 +91,105 @@ describe('getUniqueOrgs', () => {
       { org_name: 'Acme HVAC', signal_type: 'churn' },
     ]
     expect(getUniqueOrgs(rows, ['churn'])).toBe(1)
+  })
+})
+
+describe('filterByDateRange', () => {
+  // Freeze "now" to 2026-06-15T12:00:00Z so tests are deterministic
+  const FROZEN_NOW = new Date('2026-06-15T12:00:00Z')
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(FROZEN_NOW)
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const daysAgo = (n) => {
+    const d = new Date(FROZEN_NOW)
+    d.setDate(d.getDate() - n)
+    return d.toISOString()
+  }
+
+  const rows = [
+    { id: 1, created_at: daysAgo(1) },
+    { id: 2, created_at: daysAgo(10) },
+    { id: 3, created_at: daysAgo(45) },
+    { id: 4, created_at: daysAgo(120) },
+    { id: 5, created_at: 'not-a-date' },
+  ]
+
+  it('returns all rows when days is null', () => {
+    expect(filterByDateRange(rows, null)).toHaveLength(5)
+  })
+
+  it('filters to last 7 days using created_at by default', () => {
+    const result = filterByDateRange(rows, 7)
+    expect(result.map((r) => r.id)).toEqual([1])
+  })
+
+  it('filters to last 30 days', () => {
+    const result = filterByDateRange(rows, 30)
+    expect(result.map((r) => r.id).sort()).toEqual([1, 2])
+  })
+
+  it('uses custom dateField when provided (captured_date)', () => {
+    const posts = [
+      { id: 'a', captured_date: daysAgo(2) },
+      { id: 'b', captured_date: daysAgo(40) },
+    ]
+    const result = filterByDateRange(posts, 7, 'captured_date')
+    expect(result.map((r) => r.id)).toEqual(['a'])
+  })
+
+  it('skips rows with invalid date strings', () => {
+    const result = filterByDateRange(rows, 7)
+    expect(result.find((r) => r.id === 5)).toBeUndefined()
+  })
+})
+
+describe('groupBySourceAndType', () => {
+  const rows = [
+    { source: 'Reddit', signal_type: 'enrollment' },
+    { source: 'Reddit', signal_type: 'enrollment' },
+    { source: 'Reddit', signal_type: 'upsell' },
+    { source: 'Slack', signal_type: 'upsell' },
+    { source: 'Slack', signal_type: 'churn' },     // ignored
+    { source: null, signal_type: 'enrollment' },     // ignored
+    { source: 'Discord', signal_type: null },        // ignored
+  ]
+
+  it('returns array of {name, enrollment, upsell} with correct counts', () => {
+    const result = groupBySourceAndType(rows)
+    expect(result.find((r) => r.name === 'Reddit')).toEqual({ name: 'Reddit', enrollment: 2, upsell: 1 })
+  })
+
+  it('ignores churn signals', () => {
+    const result = groupBySourceAndType(rows)
+    expect(result.find((r) => r.name === 'Slack')).toEqual({ name: 'Slack', enrollment: 0, upsell: 1 })
+  })
+
+  it('ignores rows missing source or signal_type', () => {
+    const result = groupBySourceAndType(rows)
+    expect(result.find((r) => r.name == null)).toBeUndefined()
+    expect(result.find((r) => r.name === 'Discord')).toBeUndefined()
+  })
+
+  it('sorts by total (enrollment + upsell) descending', () => {
+    const result = groupBySourceAndType(rows)
+    expect(result[0].name).toBe('Reddit')
+    expect(result[1].name).toBe('Slack')
+  })
+})
+
+describe('getISOWeekLabel', () => {
+  it('is exported from aggregate.js', () => {
+    expect(typeof getISOWeekLabel).toBe('function')
+  })
+
+  it('returns a string matching YYYY-Www pattern', () => {
+    const label = getISOWeekLabel(new Date('2026-04-29'))
+    expect(label).toMatch(/^\d{4}-W\d{2}$/)
   })
 })
