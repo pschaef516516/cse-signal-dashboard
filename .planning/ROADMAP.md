@@ -28,7 +28,12 @@
 
 **Depends on:** Phase 02
 
-**Plans:** (not yet planned)
+**Plans:** 5/5 plans complete
+- [x] 03-01-PLAN.md — Signal Navigator Modal (new SignalModal.jsx, retire SignalDrawer, wire into App.jsx)
+- [x] 03-02-PLAN.md — Browse Tab Redesign (Day/Week/Month/All Time tabs + filter pills)
+- [x] 03-03-PLAN.md — Time Filter Redesign (calendar-anchored Today/Yesterday/Week↓/Month↓/All)
+- [x] 03-04-PLAN.md — Pipeline Tab (new PipelineTab.jsx, 4th tab in App.jsx)
+- [x] 03-05-PLAN.md — Category & Status Breakdowns (category chart + Active/Churned badge + % Preventable Churn)
 
 ### Phase 04 — Claude AI Analysis
 **Goal:** Integrate Claude AI into the dashboard so the CSE team can ask questions about signals and get automatic analysis (pattern detection, urgent signals, weekly summaries). Local dev uses .env.local API key; production routes through a Vercel serverless function to keep the key server-side.
