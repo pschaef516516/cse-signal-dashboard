@@ -90,7 +90,7 @@ const tableRowStyle = (clickable) => ({
 
 const postsHeaderRowStyle = {
   display: 'grid',
-  gridTemplateColumns: '1fr 1.2fr 3fr',
+  gridTemplateColumns: '0.7fr 0.7fr 1.2fr 2.5fr 0.5fr',
   gap: 12,
   padding: '8px 12px',
   borderBottom: '1px solid #E1E6F2',
@@ -103,12 +103,13 @@ const postsHeaderRowStyle = {
 
 const postsRowStyle = {
   display: 'grid',
-  gridTemplateColumns: '1fr 1.2fr 3fr',
+  gridTemplateColumns: '0.7fr 0.7fr 1.2fr 2.5fr 0.5fr',
   gap: 12,
   padding: '12px',
   borderBottom: '1px solid #E1E6F2',
   fontSize: 14,
   color: '#15181D',
+  alignItems: 'center',
 }
 
 const emptyStateStyle = {
@@ -230,7 +231,7 @@ export default function BrowseTab({ onSignalClick }) {
         )}
       </div>
 
-      {/* Posts section (D-17, D-19, D-20) — display-only, no onClick */}
+      {/* Posts section */}
       <div style={sectionPanelStyle}>
         <p style={sectionTitleStyle}>Posts ({postsForDate.length})</p>
 
@@ -240,14 +241,42 @@ export default function BrowseTab({ onSignalClick }) {
           <div>
             <div style={postsHeaderRowStyle}>
               <span>Captured</span>
+              <span>Type</span>
               <span>Author</span>
               <span>Content Preview</span>
+              <span>Link</span>
             </div>
             {postsForDate.map((p) => (
               <div key={p.id} style={postsRowStyle}>
                 <span>{formatDate(p.captured_date)}</span>
-                <span>{p.author_name || 'Unknown'}</span>
+                <span style={{ textTransform: 'capitalize' }}>{p.record_type || '—'}</span>
+                <span>
+                  {p.author_profile_url ? (
+                    <a
+                      href={p.author_profile_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#0057FF', textDecoration: 'none', fontWeight: 500 }}
+                    >
+                      {p.author_name || 'Unknown'}
+                    </a>
+                  ) : (
+                    p.author_name || 'Unknown'
+                  )}
+                </span>
                 <span>{previewText(p.text)}</span>
+                <span>
+                  {p.post_url && (
+                    <a
+                      href={p.post_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#0057FF', fontSize: 12, textDecoration: 'none', fontWeight: 500 }}
+                    >
+                      View →
+                    </a>
+                  )}
+                </span>
               </div>
             ))}
           </div>

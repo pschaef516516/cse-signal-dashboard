@@ -64,6 +64,6 @@ export async function fetchSignalsByDate(date) {
 export async function fetchPostsByDate(date) {
   if (!date) return []
   return fetchSupabase(
-    `posts?select=id,captured_date,source,author_name,text&captured_date=eq.${date}&limit=10000`
+    `posts?select=id,captured_date,source,author_name,author_profile_url,post_url,record_type,text&captured_date=eq.${date}&limit=10000`
   )
 }
