@@ -16,7 +16,6 @@ import CommunityChart from './components/charts/CommunityChart'
 import MatchRateChart from './components/charts/MatchRateChart'
 import ConfidenceHistogram from './components/charts/ConfidenceHistogram'
 import SeverityChart from './components/charts/SeverityChart'
-import PostsVsSignalsChart from './components/charts/PostsVsSignalsChart'
 import EnrollmentUpsellSplitChart from './components/charts/EnrollmentUpsellSplitChart'
 import EUCommunityChart from './components/charts/EUCommunityChart'
 
@@ -92,7 +91,7 @@ export default function App() {
 
   const tabSignalsByType = isChurn
     ? signals.filter((s) => s.signal_type === 'churn')
-    : signals.filter((s) => s.signal_type === 'enrollment' || s.signal_type === 'upsell')
+    : signals.filter((s) => s.signal_type === 'enrollment')
 
   // tabSignals = tab-typed signals filtered by active date range
   const tabSignals = filterByDateRange(tabSignalsByType, activeFilter)
@@ -100,9 +99,10 @@ export default function App() {
   // Posts use captured_date — separate filter call (per RESEARCH.md Pitfall 1)
   const filteredPosts = filterByDateRange(posts, activeFilter, 'captured_date')
 
-  // All-signals filtered by date — used by PostsVsSignalsChart so its time series
-  // respects the active filter (per D-02; cross-AI review HIGH #2 fix).
   const filteredAllSignals = filterByDateRange(signals, activeFilter)
+  const signalRate = filteredPosts.length > 0
+    ? Math.round((filteredAllSignals.length / filteredPosts.length) * 100)
+    : 0
 
   // Stat card derivations — ALL must read from filtered tabSignals (D-02).
   const matchedSignals = tabSignals.filter(
@@ -115,7 +115,7 @@ export default function App() {
   const highSeverity = tabSignals.filter((s) => s.severity === 'high').length
 
   // FIX (cross-AI review HIGH #2): uniqueOrgs must come from the FILTERED rows, not all signals.
-  const uniqueOrgs = getUniqueOrgs(tabSignals, isChurn ? ['churn'] : ['enrollment', 'upsell'])
+  const uniqueOrgs = getUniqueOrgs(tabSignals, isChurn ? ['churn'] : ['enrollment'])
 
   // Phase 02 — drawer open/close helpers (per RESEARCH.md Pitfall 2)
   const tabLabel = isChurn ? 'Churn' : 'Enrollment & Upsell'
@@ -242,21 +242,14 @@ export default function App() {
                   subtitle={`${tabSignals.length > 0 ? Math.round((highSeverity / tabSignals.length) * 100) : 0}% of signals`}
                 />
                 <StatCard title="Posts Ingested" value={filteredPosts.length} subtitle="All communities" />
+                <StatCard title="Signal Rate" value={`${signalRate}%`} subtitle="Posts converted to signals" />
                 {!isChurn && (
                   <>
-                    <StatCard title="Enrollment Signals" value={tabSignals.filter((s) => s.signal_type === 'enrollment').length} />
-                    <StatCard title="Upsell Signals" value={tabSignals.filter((s) => s.signal_type === 'upsell').length} />
+                    <StatCard title="Enrollment Signals" value={tabSignals.filter((s) => s.signal_type === 'enrollment' && s.category !== 'enrollment_upsell_opportunity').length} />
+                    <StatCard title="Upsell Signals" value={tabSignals.filter((s) => s.category === 'enrollment_upsell_opportunity').length} />
                   </>
                 )}
               </div>
-            </div>
-
-            {/* Pipeline Overview */}
-            <div style={{ marginBottom: 32 }}>
-              <SectionHeader title="Pipeline Overview" subtitle="Posts ingested vs signals generated over time" />
-              <Panel title="Posts Ingested vs Signals Generated">
-                <PostsVsSignalsChart signals={filteredAllSignals} posts={filteredPosts} />
-              </Panel>
             </div>
 
             {/* Signal Volume */}

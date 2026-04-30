@@ -1,22 +1,7 @@
 // Single signal card + list wrapper used inside SignalDrawer.
 // Per D-06: shows org name, source, severity, confidence, match method, created date.
 import { normalizeSource } from '../../config/sourceMappings'
-
-function formatDate(iso) {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (isNaN(d)) return '—'
-  // MM/DD/YYYY per UI-SPEC.md Copywriting Contract
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${mm}/${dd}/${d.getFullYear()}`
-}
-
-function formatConfidence(c) {
-  if (c === null || c === undefined) return '—'
-  const num = Number(c)
-  return isNaN(num) ? '—' : num.toFixed(2)
-}
+import { formatDate, formatConfidence } from '../../utils/format'
 
 export default function SignalCard({ signal, onClick }) {
   return (

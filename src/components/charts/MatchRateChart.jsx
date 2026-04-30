@@ -11,13 +11,13 @@ export default function MatchRateChart({ signals }) {
   ]
 
   if (signals.length === 0) {
-    return <p className="text-sm text-gray-400">No data yet.</p>
+    return <p style={{ fontSize: 12, color: '#6B7487', margin: 0 }}>No data yet.</p>
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <p className="text-4xl font-bold text-gray-900">{pct}%</p>
-      <p className="text-sm text-gray-500">of signals matched to an HCP org</p>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <p style={{ fontSize: 40, fontWeight: 700, color: '#15181D', margin: 0 }}>{pct}%</p>
+      <p style={{ fontSize: 12, color: '#6B7487', margin: 0 }}>of signals matched to an HCP org</p>
       <ResponsiveContainer width="100%" height={200}>
         <PieChart>
           <Pie data={data} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">

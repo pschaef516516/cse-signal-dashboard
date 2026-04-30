@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchSignalsByDate, fetchPostsByDate } from '../../api/supabase'
 import { normalizeSource } from '../../config/sourceMappings'
+import { formatDate, formatConfidence } from '../../utils/format'
 
 // --- Helpers ----------------------------------------------------------------
 
@@ -19,21 +20,6 @@ function yesterdayString() {
 // but this guard avoids unnecessary network round-trips).
 function isValidDateString(s) {
   return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)
-}
-
-function formatDate(iso) {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (isNaN(d)) return '—'
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${mm}/${dd}/${d.getFullYear()}`
-}
-
-function formatConfidence(c) {
-  if (c === null || c === undefined) return '—'
-  const num = Number(c)
-  return isNaN(num) ? '—' : num.toFixed(2)
 }
 
 // First 120 characters of the post content, with an ellipsis if truncated (D-19).
@@ -90,7 +76,7 @@ const tableRowStyle = (clickable) => ({
 
 const postsHeaderRowStyle = {
   display: 'grid',
-  gridTemplateColumns: '0.7fr 0.7fr 1.2fr 2.5fr 0.5fr',
+  gridTemplateColumns: '0.7fr 0.6fr 1fr 1fr 2fr 0.5fr',
   gap: 12,
   padding: '8px 12px',
   borderBottom: '1px solid #E1E6F2',
@@ -103,7 +89,7 @@ const postsHeaderRowStyle = {
 
 const postsRowStyle = {
   display: 'grid',
-  gridTemplateColumns: '0.7fr 0.7fr 1.2fr 2.5fr 0.5fr',
+  gridTemplateColumns: '0.7fr 0.6fr 1fr 1fr 2fr 0.5fr',
   gap: 12,
   padding: '12px',
   borderBottom: '1px solid #E1E6F2',
@@ -242,14 +228,16 @@ export default function BrowseTab({ onSignalClick }) {
             <div style={postsHeaderRowStyle}>
               <span>Captured</span>
               <span>Type</span>
+              <span>Source</span>
               <span>Author</span>
               <span>Content Preview</span>
-              <span>Link</span>
+              <span>Post</span>
             </div>
             {postsForDate.map((p) => (
               <div key={p.id} style={postsRowStyle}>
                 <span>{formatDate(p.captured_date)}</span>
                 <span style={{ textTransform: 'capitalize' }}>{p.record_type || '—'}</span>
+                <span>{normalizeSource(p.source)}</span>
                 <span>
                   {p.author_profile_url ? (
                     <a
@@ -266,7 +254,7 @@ export default function BrowseTab({ onSignalClick }) {
                 </span>
                 <span>{previewText(p.text)}</span>
                 <span>
-                  {p.post_url && (
+                  {p.post_url ? (
                     <a
                       href={p.post_url}
                       target="_blank"
@@ -275,7 +263,7 @@ export default function BrowseTab({ onSignalClick }) {
                     >
                       View →
                     </a>
-                  )}
+                  ) : '—'}
                 </span>
               </div>
             ))}

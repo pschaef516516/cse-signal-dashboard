@@ -1,20 +1,6 @@
 // Detail view rendered inside SignalDrawer (replaces SignalCardList).
 import { normalizeSource } from '../../config/sourceMappings'
-
-function formatDate(iso) {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (isNaN(d)) return '—'
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${mm}/${dd}/${d.getFullYear()}`
-}
-
-function formatConfidence(c) {
-  if (c === null || c === undefined) return '—'
-  const num = Number(c)
-  return isNaN(num) ? '—' : num.toFixed(2)
-}
+import { formatDate, formatConfidence } from '../../utils/format'
 
 const labelStyle = {
   fontSize: 12,
@@ -123,7 +109,8 @@ export default function SignalDetail({ signal, onBack }) {
       {/* Customer info */}
       {(signal.plan_name || signal.plan_tier || signal.vertical || signal.segment ||
         signal.status || signal.customer_status || signal.active_subscriptions ||
-        signal.org_size || signal.enrollment_date || signal.churn_date) && (
+        signal.org_size || signal.enrollment_date || signal.churn_date ||
+        signal.email || signal.phone) && (
         <MetaSection title="Customer">
           <MetaRow label="Plan" value={signal.plan_name} />
           <MetaRow label="Plan Tier" value={signal.plan_tier} />
@@ -135,6 +122,8 @@ export default function SignalDetail({ signal, onBack }) {
           <MetaRow label="Org Size" value={signal.org_size} />
           <MetaRow label="Enrolled" value={formatDate(signal.enrollment_date)} />
           <MetaRow label="Churn Date" value={formatDate(signal.churn_date)} />
+          <MetaRow label="Email" value={signal.email} />
+          <MetaRow label="Phone" value={signal.phone} />
         </MetaSection>
       )}
 

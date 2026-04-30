@@ -40,8 +40,11 @@ export function groupByWeek(rows) {
       weekMap[week] = { week, churn: 0, enrollment: 0, upsell: 0 }
     }
     const type = row.signal_type
-    if (type === 'churn' || type === 'enrollment' || type === 'upsell') {
-      weekMap[week] = { ...weekMap[week], [type]: weekMap[week][type] + 1 }
+    if (type === 'churn') {
+      weekMap[week] = { ...weekMap[week], churn: weekMap[week].churn + 1 }
+    } else if (type === 'enrollment') {
+      const bucket = row.category === 'enrollment_upsell_opportunity' ? 'upsell' : 'enrollment'
+      weekMap[week] = { ...weekMap[week], [bucket]: weekMap[week][bucket] + 1 }
     }
   })
 
@@ -109,8 +112,9 @@ export function groupBySourceAndType(rows) {
     if (!map[source]) {
       map[source] = { name: source, enrollment: 0, upsell: 0 }
     }
-    if (type === 'enrollment' || type === 'upsell') {
-      map[source] = { ...map[source], [type]: map[source][type] + 1 }
+    if (type === 'enrollment') {
+      const bucket = row.category === 'enrollment_upsell_opportunity' ? 'upsell' : 'enrollment'
+      map[source] = { ...map[source], [bucket]: map[source][bucket] + 1 }
     }
   })
   return Object.values(map).sort((a, b) => (b.enrollment + b.upsell) - (a.enrollment + a.upsell))

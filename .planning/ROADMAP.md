@@ -23,9 +23,16 @@
 - [x] 02-05-PLAN.md — Browse tab: date picker, signals + posts lists, drawer reuse, empty states (D-15–D-20)
 - [x] 02-06-PLAN.md — End-to-end visual + interaction verification (human checkpoint, includes Browse)
 
-### Phase 03 — Claude AI Analysis
-**Goal:** Integrate Claude AI into the dashboard so the CSE team can ask questions about signals and get automatic analysis (pattern detection, urgent signals, weekly summaries). Local dev uses .env.local API key; production routes through a Vercel serverless function to keep the key server-side.
+### Phase 03 — Dashboard Polish & UX
+**Goal:** Elevate the dashboard UX before adding AI: replace the signal drawer with a centered navigator modal (Prev/Next), redesign the Browse tab with time granularity tabs and filter pills, replace rolling time pills with calendar-anchored filters (Today/Yesterday/Week/Month/All), add a Pipeline tab for scraper health metrics, and surface signal category breakdowns + Active/Churned status badges on signal cards.
 
 **Depends on:** Phase 02
+
+**Plans:** (not yet planned)
+
+### Phase 04 — Claude AI Analysis
+**Goal:** Integrate Claude AI into the dashboard so the CSE team can ask questions about signals and get automatic analysis (pattern detection, urgent signals, weekly summaries). Local dev uses .env.local API key; production routes through a Vercel serverless function to keep the key server-side.
+
+**Depends on:** Phase 03
 
 **Plans:** (not yet planned)

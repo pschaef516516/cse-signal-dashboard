@@ -10,7 +10,7 @@ export default function EnrollmentUpsellSplitChart({ signals }) {
   const data = groupByWeek(signals)
 
   if (data.length === 0) {
-    return <p className="text-sm text-gray-400">No data yet.</p>
+    return <p style={{ fontSize: 12, color: '#6B7487', margin: 0 }}>No data yet.</p>
   }
 
   return (
@@ -19,7 +19,7 @@ export default function EnrollmentUpsellSplitChart({ signals }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
         <XAxis dataKey="week" tick={{ fontSize: 11 }} tickFormatter={formatWeekLabel} />
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-        <Tooltip />
+        <Tooltip labelFormatter={formatWeekLabel} />
         <Legend />
         <Bar dataKey="enrollment" stackId="a" fill="#0057FF" name="Enrollment" />
         <Bar dataKey="upsell" stackId="a" fill="#623CC9" name="Upsell" />

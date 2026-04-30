@@ -15,7 +15,7 @@ export default function SeverityChart({ signals, onBarClick }) {
   }))
 
   if (signals.length === 0) {
-    return <p className="text-sm text-gray-400">No data yet.</p>
+    return <p style={{ fontSize: 12, color: '#6B7487', margin: 0 }}>No data yet.</p>
   }
 
   return (
