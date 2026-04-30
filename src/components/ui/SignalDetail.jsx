@@ -58,23 +58,25 @@ function MetaSection({ title, children }) {
 export default function SignalDetail({ signal, onBack }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: '#0057FF',
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: 'pointer',
-          padding: '0 0 16px',
-          textAlign: 'left',
-          alignSelf: 'flex-start',
-        }}
-      >
-        ← Back to signals
-      </button>
+      {/* Back button — only shown when a back handler is provided (hidden when rendered in SignalModal) */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#0057FF',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+            padding: '0 0 16px',
+            textAlign: 'left',
+            alignSelf: 'flex-start',
+          }}
+        >
+          ← Back to signals
+        </button>
+      )}
 
       {/* Links — post + author profile */}
       {(signal.post_url || signal.author_profile_url) && (
