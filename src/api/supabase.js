@@ -35,7 +35,7 @@ export async function fetchPosts() {
 
   while (true) {
     const page = await fetchSupabase(
-      `posts?select=id,captured_date,source,author_name,text&limit=${PAGE_SIZE}&offset=${offset}`
+      `posts?select=id,captured_date,source,author_name,author_profile_url,post_url,record_type,text&limit=${PAGE_SIZE}&offset=${offset}`
     )
     all.push(...page)
     if (page.length < PAGE_SIZE) break
@@ -65,5 +65,23 @@ export async function fetchPostsByDate(date) {
   if (!date) return []
   return fetchSupabase(
     `posts?select=id,captured_date,source,author_name,author_profile_url,post_url,record_type,text&captured_date=eq.${date}&limit=10000`
+  )
+}
+
+// Browse tab — fetch signals within a date-time range (used for Week and Month granularity).
+// startISO and endISO are full datetime strings: '2026-04-20T00:00:00' / '2026-04-26T23:59:59'
+export async function fetchSignalsByRange(startISO, endISO) {
+  if (!startISO || !endISO) return []
+  return fetchSupabase(
+    `signals?select=id,created_at,captured_date,signal_type,source,record_type,match_method,org_id,org_uuid,org_name,org_size,confidence,severity,preventability,routed_at,routing_reason,key_quote,summary,suggested_action,text,author_name,author_profile_url,post_url,parent_post_url,plan_name,plan_tier,enrollment_date,churn_date,vertical,phone,segment,active_subscriptions,status,customer_status,category,email,user_id&created_at=gte.${startISO}&created_at=lte.${endISO}&limit=10000`
+  )
+}
+
+// Browse tab — fetch posts within a date range (used for Week and Month granularity).
+// startDate and endDate are date-only strings: '2026-04-20' / '2026-04-26'
+export async function fetchPostsByRange(startDate, endDate) {
+  if (!startDate || !endDate) return []
+  return fetchSupabase(
+    `posts?select=id,captured_date,source,author_name,author_profile_url,post_url,record_type,text&captured_date=gte.${startDate}&captured_date=lte.${endDate}&limit=10000`
   )
 }
