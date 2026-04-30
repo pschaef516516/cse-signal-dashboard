@@ -12,8 +12,9 @@ Add interactivity to the existing static dashboard:
 3. Signal detail view (accessible from the drawer) showing key_quote, summary, and suggested_action
 4. Enrollment & Upsell tab enriched with enrollment vs upsell split data
 5. Top Orgs table removed from both tabs
+6. Browse tab — see all raw signals and posts for a selected date (defaults to yesterday)
 
-This phase does NOT add new data sources, new tabs, routing/URLs, or AI analysis.
+This phase does NOT add new data sources, routing/URLs, or AI analysis.
 
 </domain>
 
@@ -42,6 +43,14 @@ This phase does NOT add new data sources, new tabs, routing/URLs, or AI analysis
 - **D-13:** Add enrollment vs upsell split: separate stat cards showing enrollment count and upsell count separately, plus a split/stacked chart showing each type's volume trend over time
 - **D-14:** Remove Top Orgs table from BOTH Churn and Enrollment & Upsell tabs. Most orgs in the pipeline are small (one person in the community), so org-level breakdown is not actionable. Space left empty for now — Phase 3 AI analysis will fill it.
 
+### Browse Tab (Raw Data Viewer)
+- **D-15:** Add a third tab "Browse" (alongside Churn and Enrollment & Upsell). The Browse tab is a raw data viewer — not filtered by signal type.
+- **D-16:** Browse tab has a date picker at the top (single date, default: yesterday). All content on the tab updates when the date changes.
+- **D-17:** Two sections on the Browse tab: "Signals" (all signals captured on the selected date) and "Posts" (all posts captured on the selected date). Each section is a scrollable list/table.
+- **D-18:** Signals list columns: org name, signal type, severity, source, confidence score, created date. Each row is clickable — opens the existing SignalDetail drawer (reuse the same drawer component from D-04 through D-11).
+- **D-19:** Posts list columns: captured date, org name (if available), content preview (first 120 chars of post text). Posts are display-only, not clickable.
+- **D-20:** If no signals or posts exist for the selected date, show an empty state message in each section ("No signals found for this date" / "No posts found for this date").
+
 ### Claude's Discretion
 - Exact drawer width and animation style (suggest ~480px, slide from right)
 - How to handle the "Posts Ingested" stat card under time filtering (posts table uses captured_date not created_at — implement date filter consistently or note the difference)
@@ -58,7 +67,7 @@ This phase does NOT add new data sources, new tabs, routing/URLs, or AI analysis
 No external specs — requirements fully captured in decisions above.
 
 ### Existing codebase files (agents must read before modifying)
-- `src/api/supabase.js` — Supabase REST fetch logic; needs key_quote, summary, suggested_action added to fetchSignals()
+- `src/api/supabase.js` — Supabase REST fetch logic; needs key_quote, summary, suggested_action added to fetchSignals(); also needs a fetchPostsByDate(date) and fetchSignalsByDate(date) function for Browse tab
 - `src/utils/aggregate.js` — All aggregation utilities; needs a date-range filter utility added
 - `src/App.jsx` — Main app state, tab logic, and layout; time filter state and drawer state live here
 - `src/components/charts/SignalVolumeChart.jsx` — Recharts BarChart; needs onClick on Bar element
