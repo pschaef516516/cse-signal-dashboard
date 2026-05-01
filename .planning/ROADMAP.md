@@ -51,4 +51,7 @@
 
 **Depends on:** Phase 04
 
-**Plans:** (not yet planned)
+**Plans:** 3/3 plans complete
+- [x] 05-01-PLAN.md — Install @anthropic-ai/sdk, create api/analyze.js Vercel function, fix vercel.json + .env.example
+- [x] 05-02-PLAN.md — Create AIInsightsTab.jsx with buildSummary + dual-path dev/prod fetch
+- [x] 05-03-PLAN.md — Wire AIInsightsTab into App.jsx (5th tab + isAI guards)
