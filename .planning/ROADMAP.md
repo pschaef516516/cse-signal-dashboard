@@ -46,7 +46,7 @@
 - [x] 04-02-PLAN.md — BrowseTab.jsx: 400px scroll bounds for signals/posts + match filter pill row
 - [x] 04-03-PLAN.md — PipelineTab.jsx: 'Updated daily through yesterday' subtext on Posts Ingested
 
-### Phase 05 — Claude AI Analysis
+### Phase 05 — Claude AI Analysis (COMPLETE)
 **Goal:** Integrate Claude AI into the dashboard so the CSE team can ask questions about signals and get automatic analysis (pattern detection, urgent signals, weekly summaries). Local dev uses .env.local API key; production routes through a Vercel serverless function to keep the key server-side.
 
 **Depends on:** Phase 04

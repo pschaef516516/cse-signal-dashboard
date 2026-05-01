@@ -14,15 +14,17 @@ export function countByField(rows, field) {
 }
 
 export function bucketConfidence(rows) {
-  const bins = Array.from({ length: 10 }, (_, i) => ({
-    range: `${(i / 10).toFixed(1)}–${((i + 1) / 10).toFixed(1)}`,
-    count: 0,
-  }))
+  const bins = [
+    { range: '0.6–0.7', count: 0 },
+    { range: '0.7–0.8', count: 0 },
+    { range: '0.8–0.9', count: 0 },
+    { range: '0.9–1.0', count: 0 },
+  ]
 
   rows.forEach((row) => {
     const val = parseFloat(row.confidence)
-    if (isNaN(val)) return
-    const binIndex = Math.min(Math.floor(val * 10), 9)
+    if (isNaN(val) || val < 0.6) return
+    const binIndex = Math.min(Math.floor((val - 0.6) * 10), 3)
     bins[binIndex] = { ...bins[binIndex], count: bins[binIndex].count + 1 }
   })
 

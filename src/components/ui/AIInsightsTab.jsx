@@ -53,16 +53,29 @@ function ThemeCard({ theme, last }) {
     <div style={{ padding: '14px 0', borderBottom: last ? 'none' : '1px solid #E1E6F2' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: dot, display: 'inline-block', flexShrink: 0 }} />
-        <p style={{ fontSize: 14, fontWeight: 600, color: '#15181D', margin: 0 }}>{theme.title}</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: '#15181D', margin: 0, flex: 1 }}>{theme.title}</p>
+        {theme.count > 0 && (
+          <span style={{ fontSize: 11, fontWeight: 600, color: dot, background: `${dot}12`, borderRadius: 10, padding: '2px 8px' }}>
+            ~{theme.count} signals
+          </span>
+        )}
       </div>
       <p style={{ fontSize: 13, color: '#6B7487', margin: '0 0 0 16px', lineHeight: 1.6 }}>{theme.detail}</p>
     </div>
   )
 }
 
+const SUGGESTED_QUESTIONS = [
+  'Which orgs have the most churn signals?',
+  "What's driving high-severity signals?",
+  'Which source has the highest volume?',
+  'Top signal categories this period?',
+]
+
 function ChatBar({ signals }) {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([])
+  const [history, setHistory] = useState([])
   const [chatLoading, setChatLoading] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const messagesRef = useRef(null)
@@ -73,19 +86,26 @@ function ChatBar({ signals }) {
     }
   }, [messages])
 
-  async function askQuestion() {
-    const question = input.trim()
+  async function askQuestion(questionOverride) {
+    const question = (questionOverride ?? input).trim()
     if (!question || chatLoading) return
     if (question.length > 500) {
       setMessages(prev => [...prev, { role: 'assistant', text: 'Question is too long (max 500 characters). Please shorten it.' }])
       return
     }
-    setInput('')
+    if (!questionOverride) setInput('')
     setMessages(prev => [...prev, { role: 'user', text: question }])
     setChatLoading(true)
+
     try {
-      const context = buildChatContext(signals)
-      const userMessage = `${context}\n\nQuestion: ${question}`
+      // Context is only sent on the first message to avoid repeating it every turn
+      const isFirst = history.length === 0
+      const content = isFirst ? `${buildChatContext(signals)}\n\nQuestion: ${question}` : question
+
+      // Cap at 6 messages (3 exchanges) to control token usage
+      const newHistory = [...history, { role: 'user', content }]
+      const cappedHistory = newHistory.slice(-6)
+
       let answer
 
       if (import.meta.env.DEV) {
@@ -96,20 +116,21 @@ function ChatBar({ signals }) {
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 512,
           system: CHAT_SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: userMessage }],
+          messages: cappedHistory,
         })
         answer = msg.content?.[0]?.text ?? 'No response.'
       } else {
         const res = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userMessage, mode: 'chat' }),
+          body: JSON.stringify({ messages: cappedHistory, mode: 'chat' }),
         })
         if (!res.ok) throw new Error(`Server error: ${res.status}`)
         const data = await res.json()
         answer = data.analysis
       }
 
+      setHistory([...cappedHistory, { role: 'assistant', content: answer }])
       setMessages(prev => [...prev, { role: 'assistant', text: answer }])
     } catch (err) {
       console.error('Chat failed:', err)
@@ -131,6 +152,28 @@ function ChatBar({ signals }) {
 
       {!collapsed && (
         <>
+          <div style={{ padding: '8px 12px', display: 'flex', flexWrap: 'wrap', gap: 6, borderBottom: '1px solid #F4F6FB' }}>
+            {SUGGESTED_QUESTIONS.map(q => (
+              <button
+                key={q}
+                onClick={() => askQuestion(q)}
+                disabled={chatLoading}
+                style={{
+                  background: '#F4F6FB',
+                  border: '1px solid #E1E6F2',
+                  borderRadius: 16,
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  color: '#6B7487',
+                  cursor: chatLoading ? 'not-allowed' : 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+
           {messages.length > 0 && (
             <div ref={messagesRef} style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 320, overflowY: 'auto' }}>
               {messages.map((m, i) => (
@@ -160,42 +203,44 @@ function ChatBar({ signals }) {
         </>
       )}
 
-      {!collapsed && <div style={{ padding: 12, display: 'flex', gap: 8, borderTop: messages.length > 0 ? '1px solid #E1E6F2' : 'none' }}>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && askQuestion()}
-          placeholder="e.g. Which source has the most high-severity signals?"
-          disabled={chatLoading}
-          style={{
-            flex: 1,
-            border: '1px solid #E1E6F2',
-            borderRadius: 8,
-            padding: '8px 12px',
-            fontSize: 13,
-            color: '#15181D',
-            outline: 'none',
-            background: chatLoading ? '#FAFBFF' : '#FFFFFF',
-          }}
-        />
-        <button
-          onClick={askQuestion}
-          disabled={chatLoading || !input.trim()}
-          style={{
-            background: chatLoading || !input.trim() ? '#E1E6F2' : '#0061FF',
-            color: chatLoading || !input.trim() ? '#6B7487' : '#FFFFFF',
-            border: 'none',
-            borderRadius: 8,
-            padding: '8px 16px',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: chatLoading || !input.trim() ? 'not-allowed' : 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Ask
-        </button>
-      </div>}
+      {!collapsed && (
+        <div style={{ padding: 12, display: 'flex', gap: 8, borderTop: messages.length > 0 ? '1px solid #E1E6F2' : 'none' }}>
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && askQuestion()}
+            placeholder="Ask anything about these signals…"
+            disabled={chatLoading}
+            style={{
+              flex: 1,
+              border: '1px solid #E1E6F2',
+              borderRadius: 8,
+              padding: '8px 12px',
+              fontSize: 13,
+              color: '#15181D',
+              outline: 'none',
+              background: chatLoading ? '#FAFBFF' : '#FFFFFF',
+            }}
+          />
+          <button
+            onClick={() => askQuestion()}
+            disabled={chatLoading || !input.trim()}
+            style={{
+              background: chatLoading || !input.trim() ? '#E1E6F2' : '#0061FF',
+              color: chatLoading || !input.trim() ? '#6B7487' : '#FFFFFF',
+              border: 'none',
+              borderRadius: 8,
+              padding: '8px 16px',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: chatLoading || !input.trim() ? 'not-allowed' : 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Ask
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -238,7 +283,7 @@ export default function AIInsightsTab({ signals }) {
         const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
         const msg = await client.messages.create({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2048,
+          max_tokens: 1024,
           system: SYSTEM_PROMPT,
           messages: [{ role: 'user', content: userMessage }],
         })
@@ -328,18 +373,18 @@ export default function AIInsightsTab({ signals }) {
 
       {analysis && (
         <>
+          {analysis.pipelineHealth && (
+            <Panel title="Pipeline Health" accent="#00875A">
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#15181D', margin: '0 0 6px' }}>{analysis.pipelineHealth.headline}</p>
+              <p style={{ fontSize: 14, color: '#6B7487', margin: 0, lineHeight: 1.7 }}>{analysis.pipelineHealth.body}</p>
+            </Panel>
+          )}
+
           {analysis.themes?.length > 0 && (
             <Panel title="What Pros Are Talking About" accent="#0061FF">
               {analysis.themes.map((t, i) => (
                 <ThemeCard key={i} theme={t} last={i === analysis.themes.length - 1} />
               ))}
-            </Panel>
-          )}
-
-          {analysis.pipelineHealth && (
-            <Panel title="Pipeline Health" accent="#00875A">
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#15181D', margin: '0 0 6px' }}>{analysis.pipelineHealth.headline}</p>
-              <p style={{ fontSize: 14, color: '#6B7487', margin: 0, lineHeight: 1.7 }}>{analysis.pipelineHealth.body}</p>
             </Panel>
           )}
         </>
@@ -352,10 +397,10 @@ const SYSTEM_PROMPT = `You are a CSE analyst at HousecallPro. Analyze signal pip
 
 Focus on:
 - pipelineHealth: 1-2 sentences on match rate quality and signal volume
-- themes: 3-5 recurring themes from the community quotes — what are pros frustrated about, what do they want, what's driving churn? Group similar quotes.
+- themes: 3-5 recurring themes from the community quotes — what are pros frustrated about, what do they want, what's driving churn? Group similar quotes. Include an estimated count of how many quotes belong to each theme.
 
 Return ONLY valid JSON — no markdown fences, no explanation:
-{"pipelineHealth":{"headline":"...","body":"..."},"themes":[{"title":"...","detail":"...","sentiment":"negative|positive|neutral"}]}`
+{"pipelineHealth":{"headline":"...","body":"..."},"themes":[{"title":"...","detail":"...","sentiment":"negative|positive|neutral","count":number}]}`
 
 const CHAT_SYSTEM_PROMPT = `You are a CSE analyst at HousecallPro. Answer questions about the signal pipeline data concisely and directly. Plain English only, no markdown formatting, no bullet points. 2-3 sentences max unless more detail is genuinely needed.`
 

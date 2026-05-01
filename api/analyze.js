@@ -31,27 +31,30 @@ export default async function handler(req) {
   }
 
   try {
-    const { userMessage, mode } = await req.json()
+    const { userMessage, messages, mode } = await req.json()
 
     const SYSTEM_PROMPTS = {
       analysis: `You are a CSE analyst at HousecallPro. Analyze signal pipeline data and community quotes to surface what pros are actually experiencing.
 
 Focus on:
 - pipelineHealth: 1-2 sentences on match rate quality and signal volume
-- themes: 3-5 recurring themes from the community quotes — what are pros frustrated about, what do they want, what's driving churn? Group similar quotes.
+- themes: 3-5 recurring themes from the community quotes — what are pros frustrated about, what do they want, what's driving churn? Group similar quotes. Include an estimated count of how many quotes belong to each theme.
 
 Return ONLY valid JSON — no markdown fences, no explanation:
-{"pipelineHealth":{"headline":"...","body":"..."},"themes":[{"title":"...","detail":"...","sentiment":"negative|positive|neutral"}]}`,
+{"pipelineHealth":{"headline":"...","body":"..."},"themes":[{"title":"...","detail":"...","sentiment":"negative|positive|neutral","count":number}]}`,
       chat: `You are a CSE analyst at HousecallPro. Answer questions about the signal pipeline data concisely and directly. Plain English only, no markdown formatting, no bullet points. 2-3 sentences max unless more detail is genuinely needed.`,
     }
 
     const systemPrompt = SYSTEM_PROMPTS[mode] ?? SYSTEM_PROMPTS.analysis
+    // Chat mode sends a messages array for multi-turn; analysis mode sends a single userMessage
+    const apiMessages = Array.isArray(messages) ? messages : [{ role: 'user', content: userMessage }]
+    const maxTokens = mode === 'chat' ? 512 : 1024
 
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
+      max_tokens: maxTokens,
       system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
+      messages: apiMessages,
     })
 
     const analysis = message.content?.[0]?.text ?? '{}'
