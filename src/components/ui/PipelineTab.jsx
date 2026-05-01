@@ -73,7 +73,7 @@ export default function PipelineTab({ signals, posts }) {
                 <YAxis
                   tick={{ fontSize: 11, fill: '#6B7487' }}
                   tickFormatter={(v) => `${v}%`}
-                  domain={[0, 100]}
+                  domain={[0, 'auto']}
                 />
                 <Tooltip formatter={(v) => [`${v}%`, 'Conversion Rate']} />
                 <Line

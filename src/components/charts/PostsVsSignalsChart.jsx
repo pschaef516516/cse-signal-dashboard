@@ -1,19 +1,15 @@
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 
-// Groups rows by ISO week using the specified date field.
-// Returns a map of { 'YYYY-WXX': count }.
 function countByWeek(rows, dateField) {
   return rows.reduce((acc, row) => {
     const raw = row[dateField]
     if (!raw) return acc
-    // Date-only strings must be parsed as local midnight to avoid UTC timezone shift.
     const d = typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)
       ? new Date(raw + 'T00:00:00')
       : new Date(raw)
     if (isNaN(d)) return acc
-    // ISO week calculation
     const tmp = new Date(d)
     tmp.setHours(0, 0, 0, 0)
     tmp.setDate(tmp.getDate() + 4 - (tmp.getDay() || 7))
@@ -56,15 +52,37 @@ export default function PostsVsSignalsChart({ signals, posts }) {
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+      <ComposedChart data={data} margin={{ top: 4, right: 48, left: 0, bottom: 4 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
         <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#6B7487' }} interval="preserveStartEnd" />
-        <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#6B7487' }} />
+        {/* Left axis for Posts volume */}
+        <YAxis
+          yAxisId="posts"
+          orientation="left"
+          allowDecimals={false}
+          tick={{ fontSize: 11, fill: '#6B7487' }}
+          tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
+        />
+        {/* Right axis for Signals — separate scale so signals are visible */}
+        <YAxis
+          yAxisId="signals"
+          orientation="right"
+          allowDecimals={false}
+          tick={{ fontSize: 11, fill: '#00A344' }}
+        />
         <Tooltip />
         <Legend />
-        <Line type="monotone" dataKey="Posts" stroke="#0057FF" strokeWidth={2} dot={{ r: 3 }} />
-        <Line type="monotone" dataKey="Signals" stroke="#00A344" strokeWidth={2} dot={{ r: 3 }} />
-      </LineChart>
+        <Bar yAxisId="posts" dataKey="Posts" fill="#0057FF" opacity={0.25} barSize={24} />
+        <Line
+          yAxisId="signals"
+          type="monotone"
+          dataKey="Signals"
+          stroke="#00A344"
+          strokeWidth={2}
+          dot={{ r: 3, fill: '#00A344' }}
+          activeDot={{ r: 5 }}
+        />
+      </ComposedChart>
     </ResponsiveContainer>
   )
 }
