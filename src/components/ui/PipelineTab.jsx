@@ -53,7 +53,7 @@ export default function PipelineTab({ signals, posts }) {
         <BigStat
           label="Posts Ingested"
           value={totalPosts.toLocaleString()}
-          sub="All-time community posts scraped"
+          sub="All-time community posts scraped · Updated daily through yesterday"
         />
         <BigStat
           label="Signals Generated"
