@@ -130,5 +130,5 @@ This phase does NOT add AI/Claude integration (deferred to Phase 04) or write da
 
 ---
 
-*Phase: 03-claude-ai-analysis*
+*Phase: 03-dashboard-polish-ux*
 *Context gathered: 2026-04-30*

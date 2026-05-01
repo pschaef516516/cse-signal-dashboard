@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --yes ctx7@latest docs /recharts/recharts \"layout vertical bar chart custom tick label truncate\")",
+      "Bash(npx --yes ctx7@latest docs /recharts/recharts \"LineChart AreaChart time series data over time tooltip\")",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs commit 'docs\\(03\\): research phase domain' --files .planning/phases/03-claude-ai-analysis/03-RESEARCH.md)",
+      "Skill(gsd-execute-phase)",
+      "Skill(gsd-execute-phase:*)",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs commit 'docs\\(phase-03\\): complete phase — 5/5 plans, StatusBadge gap fixed' --files .planning/ROADMAP.md .planning/STATE.md)",
+      "Skill(gsd-discuss-phase)",
+      "Skill(gsd-discuss-phase:*)",
+      "Bash(git worktree *)",
+      "Bash(git branch *)",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs roadmap update-plan-progress 04 04-01 complete)",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs roadmap update-plan-progress 04 04-03 complete)",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs commit 'docs\\(phase-04\\): update tracking after wave 1' --files .planning/ROADMAP.md .planning/STATE.md)",
+      "Bash(node __TRACKED_VAR__/.claude/get-shit-done/bin/gsd-tools.cjs verify key-links .planning/phases/04-browse-ux-data-clarity/04-02-PLAN.md)"
+    ]
+  }
+}
