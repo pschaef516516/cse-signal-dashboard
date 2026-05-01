@@ -35,9 +35,16 @@
 - [x] 03-04-PLAN.md — Pipeline Tab (new PipelineTab.jsx, 4th tab in App.jsx)
 - [x] 03-05-PLAN.md — Category & Status Breakdowns (category chart + Active/Churned badge + % Preventable Churn)
 
-### Phase 04 — Claude AI Analysis
-**Goal:** Integrate Claude AI into the dashboard so the CSE team can ask questions about signals and get automatic analysis (pattern detection, urgent signals, weekly summaries). Local dev uses .env.local API key; production routes through a Vercel serverless function to keep the key server-side.
+### Phase 04 — Browse UX & Data Clarity
+**Goal:** Fix the two biggest UX gaps before adding AI: (1) Browse tab signals and posts sections scroll infinitely — cap them at 400px with overflow scroll so the page doesn't grow unbounded. (2) CSMs need to act differently on matched vs unmatched signals — add All / Matched / Unmatched filter tabs to the Churn, E&U, and Browse signal lists. Also fold in two Phase 03 polish gaps: hide the Signal Volume chart for sub-7-day periods (shows a single broken dot), and add an "Updated daily through yesterday" note to the Posts Ingested stat card to explain the 1-day pipeline delay.
 
 **Depends on:** Phase 03
+
+**Plans:** (not yet planned)
+
+### Phase 05 — Claude AI Analysis
+**Goal:** Integrate Claude AI into the dashboard so the CSE team can ask questions about signals and get automatic analysis (pattern detection, urgent signals, weekly summaries). Local dev uses .env.local API key; production routes through a Vercel serverless function to keep the key server-side.
+
+**Depends on:** Phase 04
 
 **Plans:** (not yet planned)
