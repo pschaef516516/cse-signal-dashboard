@@ -40,11 +40,11 @@
 
 **Depends on:** Phase 03
 
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
-- [ ] 04-01-PLAN.md — App.jsx: match filter state for Churn/E&U + sub-7-day Signal Volume chart guard
+- [x] 04-01-PLAN.md — App.jsx: match filter state for Churn/E&U + sub-7-day Signal Volume chart guard
 - [ ] 04-02-PLAN.md — BrowseTab.jsx: 400px scroll bounds for signals/posts + match filter pill row
-- [ ] 04-03-PLAN.md — PipelineTab.jsx: 'Updated daily through yesterday' subtext on Posts Ingested
+- [x] 04-03-PLAN.md — PipelineTab.jsx: 'Updated daily through yesterday' subtext on Posts Ingested
 
 ### Phase 05 — Claude AI Analysis
 **Goal:** Integrate Claude AI into the dashboard so the CSE team can ask questions about signals and get automatic analysis (pattern detection, urgent signals, weekly summaries). Local dev uses .env.local API key; production routes through a Vercel serverless function to keep the key server-side.
