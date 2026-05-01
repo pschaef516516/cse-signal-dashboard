@@ -10,6 +10,7 @@ import FilterPills from './components/ui/FilterPills'
 import SignalModal from './components/ui/SignalModal'
 import BrowseTab from './components/ui/BrowseTab'
 import PipelineTab from './components/ui/PipelineTab'
+import AIInsightsTab from './components/ui/AIInsightsTab'
 
 import SignalVolumeChart from './components/charts/SignalVolumeChart'
 import CommunityChart from './components/charts/CommunityChart'
@@ -25,6 +26,7 @@ const TABS = [
   { id: 'enrollment', label: 'Enrollment & Upsell' },
   { id: 'browse', label: 'Browse' },
   { id: 'pipeline', label: 'Pipeline' },
+  { id: 'ai', label: 'AI Insights' },
 ]
 
 function Panel({ title, children }) {
@@ -131,6 +133,7 @@ export default function App() {
   const isChurn = activeTab === 'churn'
   const isBrowse = activeTab === 'browse'
   const isPipeline = activeTab === 'pipeline'
+  const isAI = activeTab === 'ai'
   const activeTimeFilter = isChurn ? churnTimeFilter : enrollmentTimeFilter
 
   // Phase 04 — sub-7-day guard (D-06). Hide weekly chart when period is shorter than a week.
@@ -253,7 +256,7 @@ export default function App() {
                 )
               })}
             </div>
-            {!isBrowse && !isPipeline && (
+            {!isBrowse && !isPipeline && !isAI && (
               <FilterPills
                 value={isChurn ? churnTimeFilter : enrollmentTimeFilter}
                 onChange={(newFilter) => {
@@ -269,7 +272,7 @@ export default function App() {
       {/* Content */}
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '32px 32px' }}>
 
-        {!isBrowse && !isPipeline && (
+        {!isBrowse && !isPipeline && !isAI && (
           <>
             {/* Key Metrics */}
             <div style={{ marginBottom: 32 }}>
@@ -443,6 +446,12 @@ export default function App() {
         {isPipeline && (
           <div style={{ marginBottom: 32 }}>
             <PipelineTab signals={signals} posts={posts} />
+          </div>
+        )}
+
+        {isAI && (
+          <div style={{ marginBottom: 32 }}>
+            <AIInsightsTab signals={signals} />
           </div>
         )}
 
