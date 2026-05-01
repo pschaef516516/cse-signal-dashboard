@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
     "@tailwindcss/vite": "^4.2.4",
     "autoprefixer": "^10.5.0",
     "react": "^19.2.5",
