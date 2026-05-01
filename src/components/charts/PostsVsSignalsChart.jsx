@@ -1,6 +1,7 @@
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
+import { getISOWeekLabel, formatWeekLabel } from '../../utils/aggregate'
 
 function countByWeek(rows, dateField) {
   return rows.reduce((acc, row) => {
@@ -10,26 +11,9 @@ function countByWeek(rows, dateField) {
       ? new Date(raw + 'T00:00:00')
       : new Date(raw)
     if (isNaN(d)) return acc
-    const tmp = new Date(d)
-    tmp.setHours(0, 0, 0, 0)
-    tmp.setDate(tmp.getDate() + 4 - (tmp.getDay() || 7))
-    const year = tmp.getFullYear()
-    const week = Math.ceil(((tmp - new Date(year, 0, 1)) / 86400000 + 1) / 7)
-    const key = `${year}-W${String(week).padStart(2, '0')}`
+    const key = getISOWeekLabel(d)
     return { ...acc, [key]: (acc[key] ?? 0) + 1 }
   }, {})
-}
-
-function formatWeek(isoWeek) {
-  if (!isoWeek) return ''
-  const [yearStr, weekStr] = isoWeek.split('-W')
-  const year = parseInt(yearStr, 10)
-  const week = parseInt(weekStr, 10)
-  const jan4 = new Date(year, 0, 4)
-  const dayOfWeek = jan4.getDay() || 7
-  const mon = new Date(jan4)
-  mon.setDate(jan4.getDate() - dayOfWeek + 1 + (week - 1) * 7)
-  return mon.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export default function PostsVsSignalsChart({ signals, posts }) {
@@ -41,7 +25,7 @@ export default function PostsVsSignalsChart({ signals, posts }) {
   ).sort()
 
   const data = allWeeks.map((week) => ({
-    week: formatWeek(week),
+    week: formatWeekLabel(week),
     Posts: postsByWeek[week] ?? 0,
     Signals: signalsByWeek[week] ?? 0,
   }))
@@ -55,7 +39,6 @@ export default function PostsVsSignalsChart({ signals, posts }) {
       <ComposedChart data={data} margin={{ top: 4, right: 48, left: 0, bottom: 4 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
         <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#6B7487' }} interval="preserveStartEnd" />
-        {/* Left axis for Posts volume */}
         <YAxis
           yAxisId="posts"
           orientation="left"
@@ -63,7 +46,6 @@ export default function PostsVsSignalsChart({ signals, posts }) {
           tick={{ fontSize: 11, fill: '#6B7487' }}
           tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
         />
-        {/* Right axis for Signals — separate scale so signals are visible */}
         <YAxis
           yAxisId="signals"
           orientation="right"

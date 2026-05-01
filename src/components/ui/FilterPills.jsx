@@ -3,21 +3,7 @@
 // Props: { value: { mode, weekValue, monthValue }, onChange: fn }
 import { useState, useEffect, useRef } from 'react'
 import { getRecentWeeks, getRecentMonths, formatWeekRangeLabel, formatMonthLabel } from '../../utils/dateRanges'
-
-// Returns inline styles for a pill button — filled blue when active, outlined gray when not.
-function pillStyle(active) {
-  return {
-    padding: '8px 12px',
-    fontSize: 12,
-    fontWeight: 600,
-    borderRadius: 20,
-    border: active ? '1px solid #0057FF' : '1px solid #E1E6F2',
-    background: active ? '#0057FF' : '#FFFFFF',
-    color: active ? '#FFFFFF' : '#6B7487',
-    cursor: 'pointer',
-    minHeight: 36,
-  }
-}
+import pillStyle from './pillStyle'
 
 // Shared dropdown container style — rendered below Week and Month buttons.
 const dropdownStyle = {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { fetchSignals, fetchPosts } from './api/supabase'
 import { getUniqueOrgs, getISOWeekLabel, formatWeekLabel } from './utils/aggregate'
 import { getTodayRange, getYesterdayRange, getWeekRange, getMonthRange, filterByRange } from './utils/dateRanges'
@@ -20,6 +20,18 @@ import SeverityChart from './components/charts/SeverityChart'
 import EnrollmentUpsellSplitChart from './components/charts/EnrollmentUpsellSplitChart'
 import EUCommunityChart from './components/charts/EUCommunityChart'
 import CategoryBreakdownChart from './components/charts/CategoryBreakdownChart'
+import pillStyle from './components/ui/pillStyle'
+
+class ChartErrorBoundary extends React.Component {
+  state = { error: null }
+  static getDerivedStateFromError(error) { return { error } }
+  render() {
+    if (this.state.error) {
+      return <p style={{ fontSize: 12, color: '#D81860', margin: 0 }}>Chart could not render.</p>
+    }
+    return this.props.children
+  }
+}
 
 const TABS = [
   { id: 'churn', label: 'Churn' },
@@ -35,24 +47,9 @@ function Panel({ title, children }) {
       {title && (
         <p style={{ fontSize: 14, fontWeight: 600, color: '#6B7487', marginBottom: 16 }}>{title}</p>
       )}
-      {children}
+      <ChartErrorBoundary>{children}</ChartErrorBoundary>
     </div>
   )
-}
-
-// Phase 04 — pill style for match filter buttons. Copied from FilterPills.jsx lines 8-19.
-function pillStyle(active) {
-  return {
-    padding: '8px 12px',
-    fontSize: 12,
-    fontWeight: 600,
-    borderRadius: 20,
-    border: active ? '1px solid #0057FF' : '1px solid #E1E6F2',
-    background: active ? '#0057FF' : '#FFFFFF',
-    color: active ? '#FFFFFF' : '#6B7487',
-    cursor: 'pointer',
-    minHeight: 36,
-  }
 }
 
 export default function App() {

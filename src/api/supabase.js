@@ -1,3 +1,5 @@
+// RLS must be enabled on both tables with a SELECT-only policy for the anon role.
+// If RLS is disabled, the anon key exposes all rows to anyone who finds it in the browser bundle.
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
@@ -16,13 +18,12 @@ async function fetchSupabase(path) {
   return response.json()
 }
 
+const SIGNAL_COLUMNS = 'id,created_at,captured_date,signal_type,source,record_type,match_method,org_id,org_uuid,org_name,org_size,confidence,severity,preventability,routed_at,routing_reason,key_quote,summary,suggested_action,text,author_name,author_profile_url,post_url,parent_post_url,plan_name,plan_tier,enrollment_date,churn_date,vertical,phone,segment,active_subscriptions,status,customer_status,category,email,user_id'
+
 // Fetch all signals — only columns the dashboard needs.
-// Phase 02 (D-08): added key_quote, summary, suggested_action for the SignalDetail view.
 // limit=10000 overrides the default 1,000-row cap.
 export async function fetchSignals() {
-  return fetchSupabase(
-    'signals?select=id,created_at,captured_date,signal_type,source,record_type,match_method,org_id,org_uuid,org_name,org_size,confidence,severity,preventability,routed_at,routing_reason,key_quote,summary,suggested_action,text,author_name,author_profile_url,post_url,parent_post_url,plan_name,plan_tier,enrollment_date,churn_date,vertical,phone,segment,active_subscriptions,status,customer_status,category,email,user_id&limit=10000'
-  )
+  return fetchSupabase(`signals?select=${SIGNAL_COLUMNS}&limit=10000`)
 }
 
 // Fetch all posts with pagination (server caps at 1,000 rows per request).
@@ -59,9 +60,7 @@ export async function fetchSignalsByDate(date) {
   if (!date) return []
   const start = `${date}T00:00:00`
   const end = `${date}T23:59:59`
-  return fetchSupabase(
-    `signals?select=id,created_at,captured_date,signal_type,source,record_type,match_method,org_id,org_uuid,org_name,org_size,confidence,severity,preventability,routed_at,routing_reason,key_quote,summary,suggested_action,text,author_name,author_profile_url,post_url,parent_post_url,plan_name,plan_tier,enrollment_date,churn_date,vertical,phone,segment,active_subscriptions,status,customer_status,category,email,user_id&created_at=gte.${start}&created_at=lte.${end}&limit=10000`
-  )
+  return fetchSupabase(`signals?select=${SIGNAL_COLUMNS}&created_at=gte.${start}&created_at=lte.${end}&limit=10000`)
 }
 
 // Phase 02 (D-15, D-17): Browse tab — fetch posts captured on a specific date.
@@ -78,9 +77,7 @@ export async function fetchPostsByDate(date) {
 // startISO and endISO are full datetime strings: '2026-04-20T00:00:00' / '2026-04-26T23:59:59'
 export async function fetchSignalsByRange(startISO, endISO) {
   if (!startISO || !endISO) return []
-  return fetchSupabase(
-    `signals?select=id,created_at,captured_date,signal_type,source,record_type,match_method,org_id,org_uuid,org_name,org_size,confidence,severity,preventability,routed_at,routing_reason,key_quote,summary,suggested_action,text,author_name,author_profile_url,post_url,parent_post_url,plan_name,plan_tier,enrollment_date,churn_date,vertical,phone,segment,active_subscriptions,status,customer_status,category,email,user_id&created_at=gte.${startISO}&created_at=lte.${endISO}&limit=10000`
-  )
+  return fetchSupabase(`signals?select=${SIGNAL_COLUMNS}&created_at=gte.${startISO}&created_at=lte.${endISO}&limit=10000`)
 }
 
 // Browse tab — fetch posts within a date range (used for Week and Month granularity).
