@@ -98,7 +98,7 @@ export default function PipelineTab({ signals, posts }) {
         {/* CommunityChart expects a "signals" prop but works for posts too — both have a source column.
             onBarClick is undefined because Pipeline tab has no drill-down (D-14). */}
         <Panel title="All communities">
-          <CommunityChart signals={posts} onBarClick={undefined} />
+          <CommunityChart signals={posts} onBarClick={undefined} label="Posts" />
         </Panel>
       </div>
 

@@ -6,7 +6,7 @@ import { normalizeSource } from '../../config/sourceMappings'
 
 const COLORS = ['#0057FF', '#3378FF', '#6699FF', '#99BBFF', '#B2CDFF', '#CCdDFF', '#E3ECFF']
 
-export default function CommunityChart({ signals, onBarClick }) {
+export default function CommunityChart({ signals, onBarClick, label = 'Signals' }) {
   const normalized = signals.map((s) => ({ ...s, source: normalizeSource(s.source) }))
   const data = countByField(normalized, 'source')
 
@@ -28,7 +28,7 @@ export default function CommunityChart({ signals, onBarClick }) {
         <Tooltip />
         <Bar
           dataKey="count"
-          name="Signals"
+          name={label}
           onClick={onBarClick ? (entry) => onBarClick(entry.name) : undefined}
         >
           {data.map((_, index) => (

@@ -109,10 +109,17 @@ export function formatMonthLabel(yearMonth) {
 
 // Filters an array of rows to those where row[dateField] falls within [range.start, range.end].
 // Returns rows unchanged if range is null.
+// Date-only strings like "2026-04-30" are parsed as local midnight to avoid UTC timezone shift.
 export function filterByRange(rows, range, dateField = 'created_at') {
   if (!range) return rows
   return rows.filter((row) => {
-    const d = new Date(row[dateField])
+    const raw = row[dateField]
+    if (!raw) return false
+    // Date-only strings (YYYY-MM-DD) are UTC when parsed normally, causing a day offset in local time.
+    // Append T00:00:00 (no Z) so JS treats them as local midnight instead.
+    const d = typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)
+      ? new Date(raw + 'T00:00:00')
+      : new Date(raw)
     return !isNaN(d) && d >= range.start && d <= range.end
   })
 }
