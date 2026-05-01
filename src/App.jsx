@@ -38,6 +38,21 @@ function Panel({ title, children }) {
   )
 }
 
+// Phase 04 — pill style for match filter buttons. Copied from FilterPills.jsx lines 8-19.
+function pillStyle(active) {
+  return {
+    padding: '8px 12px',
+    fontSize: 12,
+    fontWeight: 600,
+    borderRadius: 20,
+    border: active ? '1px solid #0057FF' : '1px solid #E1E6F2',
+    background: active ? '#0057FF' : '#FFFFFF',
+    color: active ? '#FFFFFF' : '#6B7487',
+    cursor: 'pointer',
+    minHeight: 36,
+  }
+}
+
 export default function App() {
   const [signals, setSignals] = useState([])
   const [posts, setPosts] = useState([])
@@ -48,6 +63,10 @@ export default function App() {
   // Phase 03 — calendar-anchored time filter (per D-10, D-11). mode: 'all' = all-time.
   const [churnTimeFilter, setChurnTimeFilter] = useState({ mode: 'all', weekValue: null, monthValue: null })
   const [enrollmentTimeFilter, setEnrollmentTimeFilter] = useState({ mode: 'all', weekValue: null, monthValue: null })
+
+  // Phase 04 — match filter state (D-03 to D-05). Per-tab, simple string.
+  const [churnMatchFilter, setChurnMatchFilter] = useState('all')       // 'all' | 'matched' | 'unmatched'
+  const [enrollmentMatchFilter, setEnrollmentMatchFilter] = useState('all')
 
   // Phase 03 — modal state (replaces drawer state)
   const [modalOpen, setModalOpen] = useState(false)
@@ -114,12 +133,24 @@ export default function App() {
   const isPipeline = activeTab === 'pipeline'
   const activeTimeFilter = isChurn ? churnTimeFilter : enrollmentTimeFilter
 
+  // Phase 04 — sub-7-day guard (D-06). Hide weekly chart when period is shorter than a week.
+  const isSubWeek = activeTimeFilter.mode === 'today' || activeTimeFilter.mode === 'yesterday'
+
   const tabSignalsByType = isChurn
     ? signals.filter((s) => s.signal_type === 'churn')
     : signals.filter((s) => s.signal_type === 'enrollment')
 
   // tabSignals = tab-typed signals filtered by active calendar time filter
   const tabSignals = filterByTimeFilter(tabSignalsByType, activeTimeFilter)
+
+  // Phase 04 — match filter applied AFTER time filter. Used ONLY by signal list / modal click handlers.
+  // Stat cards and charts MUST keep using tabSignals (unfiltered by match) — see Pitfall 2 in RESEARCH.md.
+  const activeMatchFilter = isChurn ? churnMatchFilter : enrollmentMatchFilter
+  const displayedTabSignals = tabSignals.filter((s) => {
+    if (activeMatchFilter === 'matched') return s.match_method != null && s.match_method !== 'not_found'
+    if (activeMatchFilter === 'unmatched') return s.match_method === 'not_found'
+    return true // 'all'
+  })
 
   // Posts use captured_date — separate filter call (per RESEARCH.md Pitfall 1)
   const filteredPosts = filterByTimeFilter(posts, activeTimeFilter, 'captured_date')
@@ -159,13 +190,14 @@ export default function App() {
   }
 
   // Phase 03 — chart click handlers open modal instead of drawer
+  // Phase 04 — handlers now use displayedTabSignals so modal respects the active match filter
   function handleCommunityClick(sourceName) {
-    const filtered = tabSignals.filter((s) => s.source === sourceName)
+    const filtered = displayedTabSignals.filter((s) => s.source === sourceName)
     openModal(filtered, 0)
   }
 
   function handleWeekClick(weekLabel) {
-    const filtered = tabSignals.filter((s) => {
+    const filtered = displayedTabSignals.filter((s) => {
       if (!s.created_at) return false
       return getISOWeekLabel(new Date(s.created_at)) === weekLabel
     })
@@ -173,12 +205,12 @@ export default function App() {
   }
 
   function handleSeverityClick(level) {
-    const filtered = tabSignals.filter((s) => s.severity === level)
+    const filtered = displayedTabSignals.filter((s) => s.severity === level)
     openModal(filtered, 0)
   }
 
   function handleCategoryClick(category) {
-    const filtered = tabSignals.filter((s) => s.category === category)
+    const filtered = displayedTabSignals.filter((s) => s.category === category)
     openModal(filtered, 0)
   }
 
@@ -280,11 +312,43 @@ export default function App() {
               </div>
             </div>
 
+            {/* Phase 04 — Match filter pill row (D-03, D-04, D-05) */}
+            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7487' }}>Match status:</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[
+                  { value: 'all', label: 'All' },
+                  { value: 'matched', label: 'Matched' },
+                  { value: 'unmatched', label: 'Unmatched' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => isChurn ? setChurnMatchFilter(opt.value) : setEnrollmentMatchFilter(opt.value)}
+                    style={pillStyle(activeMatchFilter === opt.value)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <span style={{ fontSize: 12, color: '#6B7487', marginLeft: 'auto' }}>
+                {displayedTabSignals.length} of {tabSignals.length} signals
+              </span>
+            </div>
+
             {/* Signal Volume */}
             <div style={{ marginBottom: 32 }}>
               <SectionHeader title="Signal Volume" subtitle="Signals detected per week" />
               <Panel title="Signals by Week">
-                <SignalVolumeChart signals={tabSignals} onBarClick={handleWeekClick} mode={isChurn ? 'churn' : 'eu'} />
+                {isSubWeek ? (
+                  <p style={{ fontSize: 28, fontWeight: 700, color: '#15181D', margin: 0, textAlign: 'center', padding: '24px 0' }}>
+                    {tabSignals.length}
+                    <span style={{ fontSize: 14, fontWeight: 400, color: '#6B7487', marginLeft: 8 }}>
+                      signals {activeTimeFilter.mode === 'today' ? 'today' : 'yesterday'}
+                    </span>
+                  </p>
+                ) : (
+                  <SignalVolumeChart signals={tabSignals} onBarClick={handleWeekClick} mode={isChurn ? 'churn' : 'eu'} />
+                )}
               </Panel>
             </div>
 
