@@ -1,137 +1,430 @@
-// src/components/ui/AIInsightsTab.jsx
-// Phase 05 — AI Insights tab. Self-contained: owns its own loading/error/analysis state.
-// Auto-runs analysis on mount (D-03). Sends a pre-aggregated summary (D-05) — never raw rows.
-// Dual-path fetch:
-//   dev  (import.meta.env.DEV)  -> calls Anthropic API directly with VITE_ANTHROPIC_API_KEY
-//   prod (Vercel)               -> POSTs /api/analyze (serverless function holds the key)
-
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Anthropic from '@anthropic-ai/sdk'
 import { countByField } from '../../utils/aggregate'
 
-// Panel — copied verbatim from PipelineTab.jsx lines 5-14. Defined locally per project pattern.
-function Panel({ title, children }) {
+function Panel({ title, accent, children }) {
   return (
-    <div style={{ background: '#FFFFFF', border: '1px solid #E1E6F2', borderRadius: 12, padding: 20 }}>
+    <div style={{
+      background: '#FFFFFF',
+      border: `1px solid ${accent ? `${accent}30` : '#E1E6F2'}`,
+      borderLeft: accent ? `4px solid ${accent}` : '1px solid #E1E6F2',
+      borderRadius: 12,
+      padding: 20,
+    }}>
       {title && (
-        <p style={{ fontSize: 14, fontWeight: 600, color: '#6B7487', marginBottom: 16 }}>{title}</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: '#6B7487', margin: '0 0 16px' }}>{title}</p>
       )}
       {children}
     </div>
   )
 }
 
+function MetricCard({ label, value, sub, accent }) {
+  return (
+    <div style={{
+      background: accent ? `${accent}08` : '#FFFFFF',
+      border: `1px solid ${accent ? `${accent}30` : '#E1E6F2'}`,
+      borderTop: accent ? `3px solid ${accent}` : '1px solid #E1E6F2',
+      borderRadius: 12,
+      padding: '16px 20px',
+      flex: 1,
+    }}>
+      <p style={{ fontSize: 11, fontWeight: 600, color: accent ?? '#6B7487', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+      <p style={{ fontSize: 26, fontWeight: 700, color: '#15181D', margin: 0 }}>{value}</p>
+      {sub && <p style={{ fontSize: 12, color: '#6B7487', margin: '4px 0 0' }}>{sub}</p>}
+    </div>
+  )
+}
+
+function AlertBanner({ count, pct }) {
+  return (
+    <div style={{ background: '#FFF1F4', border: '1px solid #F5C0CC', borderRadius: 12, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span style={{ fontSize: 16 }}>⚠</span>
+      <p style={{ fontSize: 14, fontWeight: 600, color: '#D81860', margin: 0 }}>
+        {count} high-severity signals ({pct}%) need immediate CSE attention
+      </p>
+    </div>
+  )
+}
+
+function ThemeCard({ theme, last }) {
+  const dot = theme.sentiment === 'negative' ? '#D81860' : theme.sentiment === 'positive' ? '#00875A' : '#6B7487'
+  return (
+    <div style={{ padding: '14px 0', borderBottom: last ? 'none' : '1px solid #E1E6F2' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: dot, display: 'inline-block', flexShrink: 0 }} />
+        <p style={{ fontSize: 14, fontWeight: 600, color: '#15181D', margin: 0 }}>{theme.title}</p>
+      </div>
+      <p style={{ fontSize: 13, color: '#6B7487', margin: '0 0 0 16px', lineHeight: 1.6 }}>{theme.detail}</p>
+    </div>
+  )
+}
+
+function ChatBar({ signals }) {
+  const [input, setInput] = useState('')
+  const [messages, setMessages] = useState([])
+  const [chatLoading, setChatLoading] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const messagesRef = useRef(null)
+
+  useEffect(() => {
+    if (messagesRef.current) {
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight
+    }
+  }, [messages])
+
+  async function askQuestion() {
+    const question = input.trim()
+    if (!question || chatLoading) return
+    if (question.length > 500) {
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Question is too long (max 500 characters). Please shorten it.' }])
+      return
+    }
+    setInput('')
+    setMessages(prev => [...prev, { role: 'user', text: question }])
+    setChatLoading(true)
+    try {
+      const context = buildChatContext(signals)
+      const userMessage = `${context}\n\nQuestion: ${question}`
+      let answer
+
+      if (import.meta.env.DEV) {
+        const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
+        if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY not set')
+        const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
+        const msg = await client.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 512,
+          system: CHAT_SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: userMessage }],
+        })
+        answer = msg.content?.[0]?.text ?? 'No response.'
+      } else {
+        const res = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userMessage, mode: 'chat' }),
+        })
+        if (!res.ok) throw new Error(`Server error: ${res.status}`)
+        const data = await res.json()
+        answer = data.analysis
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', text: answer }])
+    } catch (err) {
+      console.error('Chat failed:', err)
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Could not get an answer. Try again.' }])
+    } finally {
+      setChatLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ background: '#FFFFFF', border: '1px solid #E1E6F2', borderRadius: 12, overflow: 'hidden' }}>
+      <div
+        onClick={() => setCollapsed(c => !c)}
+        style={{ padding: '12px 20px', borderBottom: collapsed ? 'none' : '1px solid #E1E6F2', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+      >
+        <p style={{ fontSize: 14, fontWeight: 600, color: '#6B7487', margin: 0 }}>Ask a Question</p>
+        <span style={{ fontSize: 12, color: '#6B7487' }}>{collapsed ? '▼' : '▲'}</span>
+      </div>
+
+      {!collapsed && (
+        <>
+          {messages.length > 0 && (
+            <div ref={messagesRef} style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 320, overflowY: 'auto' }}>
+              {messages.map((m, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{
+                    background: m.role === 'user' ? '#0061FF' : '#F4F6FB',
+                    color: m.role === 'user' ? '#FFFFFF' : '#15181D',
+                    borderRadius: m.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                    padding: '10px 14px',
+                    fontSize: 13,
+                    lineHeight: 1.6,
+                    maxWidth: '80%',
+                  }}>
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <div style={{ background: '#F4F6FB', borderRadius: '12px 12px 12px 2px', padding: '10px 14px' }}>
+                    <div className="ai-spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {!collapsed && <div style={{ padding: 12, display: 'flex', gap: 8, borderTop: messages.length > 0 ? '1px solid #E1E6F2' : 'none' }}>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && askQuestion()}
+          placeholder="e.g. Which source has the most high-severity signals?"
+          disabled={chatLoading}
+          style={{
+            flex: 1,
+            border: '1px solid #E1E6F2',
+            borderRadius: 8,
+            padding: '8px 12px',
+            fontSize: 13,
+            color: '#15181D',
+            outline: 'none',
+            background: chatLoading ? '#FAFBFF' : '#FFFFFF',
+          }}
+        />
+        <button
+          onClick={askQuestion}
+          disabled={chatLoading || !input.trim()}
+          style={{
+            background: chatLoading || !input.trim() ? '#E1E6F2' : '#0061FF',
+            color: chatLoading || !input.trim() ? '#6B7487' : '#FFFFFF',
+            border: 'none',
+            borderRadius: 8,
+            padding: '8px 16px',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: chatLoading || !input.trim() ? 'not-allowed' : 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Ask
+        </button>
+      </div>}
+    </div>
+  )
+}
+
+const CACHE_KEY = 'cse_ai_insights'
+
 export default function AIInsightsTab({ signals }) {
   const [loading, setLoading] = useState(false)
   const [analysis, setAnalysis] = useState(null)
   const [error, setError] = useState(null)
+  const [analyzedAt, setAnalyzedAt] = useState(null)
 
   useEffect(() => {
-    // Auto-run on mount (D-03). Empty deps = run once. See RESEARCH.md Pitfall 4.
-    runAnalysis()
+    try {
+      const cached = sessionStorage.getItem(CACHE_KEY)
+      if (cached) {
+        const { analysis: a, analyzedAt: t } = JSON.parse(cached)
+        setAnalysis(a)
+        setAnalyzedAt(t)
+        return
+      }
+    } catch { /* invalid cache — fall through */ }
+    if (signals.length > 0) runAnalysis()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function runAnalysis() {
-    // Skip if we already have an analysis (component re-mounted with cached state) or already loading
-    if (analysis || loading) return
-
+    if (loading) return
+    sessionStorage.removeItem(CACHE_KEY)
     setLoading(true)
     setError(null)
-
     try {
       const summary = buildSummary(signals)
-      let analysisText
+      const userMessage = buildUserMessage(summary)
+      let raw
 
       if (import.meta.env.DEV) {
-        // DEV PATH — call Anthropic directly from the browser using VITE_ANTHROPIC_API_KEY.
-        // dangerouslyAllowBrowser is required by the SDK to opt-in to browser usage.
-        // This bypasses the serverless function so `npm run dev` works without `vercel dev`.
         const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-        if (!apiKey) {
-          throw new Error('VITE_ANTHROPIC_API_KEY is not set in .env.local')
-        }
+        if (!apiKey) throw new Error('VITE_ANTHROPIC_API_KEY is not set in .env.local')
         const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
-        const message = await client.messages.create({
+        const msg = await client.messages.create({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1024,
+          max_tokens: 2048,
           system: SYSTEM_PROMPT,
-          messages: [
-            {
-              role: 'user',
-              content: `Analyze this signal pipeline summary as of ${summary.date}:\n\n${JSON.stringify(summary, null, 2)}`,
-            },
-          ],
+          messages: [{ role: 'user', content: userMessage }],
         })
-        analysisText = message.content?.[0]?.text ?? 'No analysis returned.'
+        raw = msg.content?.[0]?.text ?? ''
       } else {
-        // PROD PATH — POST to /api/analyze. Serverless function holds the key.
         const res = await fetch('/api/analyze', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' }, // required — RESEARCH.md Pitfall 5
-          body: JSON.stringify({ summary }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userMessage }),
         })
         if (!res.ok) throw new Error(`Server error: ${res.status}`)
         const data = await res.json()
-        analysisText = data.analysis
+        raw = data.analysis
       }
 
-      setAnalysis(analysisText)
+      const parsed = parseAnalysis(raw)
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify({ analysis: parsed, analyzedAt: time }))
+      setAnalysis(parsed)
+      setAnalyzedAt(time)
     } catch (err) {
       console.error('AI analysis failed:', err)
-      setError('Could not load analysis. Please refresh the page to try again.')
+      setError('Could not load analysis. Click Re-analyze to try again.')
     } finally {
       setLoading(false)
     }
   }
 
+  const metrics = buildMetrics(signals)
+  const showAlert = metrics.highSeverityPct >= 35
+
   return (
-    <div>
-      <Panel title="AI Signal Analysis">
-        {loading && (
-          <p style={{ color: '#6B7487', fontSize: 14, margin: 0 }}>Analyzing signals…</p>
-        )}
-        {error && (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <p style={{ fontSize: 16, fontWeight: 700, color: '#15181D', margin: 0 }}>AI Signal Analysis</p>
+          {analyzedAt && <p style={{ fontSize: 12, color: '#6B7487', margin: '3px 0 0' }}>Last analyzed at {analyzedAt}</p>}
+        </div>
+        <button
+          onClick={runAnalysis}
+          disabled={loading}
+          style={{
+            background: loading ? '#E1E6F2' : '#0061FF',
+            color: loading ? '#6B7487' : '#FFFFFF',
+            border: 'none',
+            borderRadius: 8,
+            padding: '8px 16px',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: loading ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {loading ? 'Analyzing…' : 'Re-analyze'}
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', gap: 12 }}>
+        <MetricCard label="Total Signals" value={metrics.total} accent="#0061FF" />
+        <MetricCard label="Match Rate" value={`${metrics.matchRatePct}%`} sub={`${metrics.matched} matched`} accent={metrics.matchRatePct >= 70 ? '#00875A' : metrics.matchRatePct >= 50 ? '#F5A623' : '#D81860'} />
+        <MetricCard label="High Severity" value={metrics.highSeverity} sub={`${metrics.highSeverityPct}% of signals`} accent="#D81860" />
+        <MetricCard label="Churn vs E&U" value={`${metrics.churn} / ${metrics.eu}`} sub="churn / enrollment+upsell" accent="#7B61FF" />
+      </div>
+
+      {showAlert && <AlertBanner count={metrics.highSeverity} pct={metrics.highSeverityPct} />}
+
+      {error && (
+        <div style={{ background: '#FFF1F4', border: '1px solid #F5C0CC', borderRadius: 12, padding: '14px 20px' }}>
           <p style={{ color: '#D81860', fontSize: 14, margin: 0 }}>{error}</p>
-        )}
-        {analysis && (
-          <p style={{ fontSize: 14, color: '#15181D', lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: 0 }}>
-            {analysis}
+        </div>
+      )}
+
+      {loading && (
+        <div style={{ background: '#FFFFFF', border: '1px solid #E1E6F2', borderRadius: 12, padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <div className="ai-spinner" />
+          <p style={{ color: '#6B7487', fontSize: 14, margin: 0 }}>
+            Analyzing {Math.min(signals.filter(s => s.key_quote?.trim()).length, 500)} signal quotes…
           </p>
-        )}
-        {!loading && !error && !analysis && (
-          <p style={{ color: '#6B7487', fontSize: 14, margin: 0 }}>No analysis yet.</p>
-        )}
-      </Panel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+            <div className="ai-skeleton" style={{ height: 14, width: '60%' }} />
+            <div className="ai-skeleton" style={{ height: 14, width: '80%' }} />
+            <div className="ai-skeleton" style={{ height: 14, width: '50%' }} />
+          </div>
+        </div>
+      )}
+
+      <ChatBar signals={signals} />
+
+      {analysis && (
+        <>
+          {analysis.themes?.length > 0 && (
+            <Panel title="What Pros Are Talking About" accent="#0061FF">
+              {analysis.themes.map((t, i) => (
+                <ThemeCard key={i} theme={t} last={i === analysis.themes.length - 1} />
+              ))}
+            </Panel>
+          )}
+
+          {analysis.pipelineHealth && (
+            <Panel title="Pipeline Health" accent="#00875A">
+              <p style={{ fontSize: 15, fontWeight: 600, color: '#15181D', margin: '0 0 6px' }}>{analysis.pipelineHealth.headline}</p>
+              <p style={{ fontSize: 14, color: '#6B7487', margin: 0, lineHeight: 1.7 }}>{analysis.pipelineHealth.body}</p>
+            </Panel>
+          )}
+        </>
+      )}
     </div>
   )
 }
 
-// System prompt — focused on actionable CSE insights (Claude's discretion, per CONTEXT.md).
-const SYSTEM_PROMPT = `You are a CSE (Customer Success Engineering) analyst at HousecallPro.
-Analyze the signal pipeline data and provide a concise written summary for the CSE team.
-Focus on: overall pipeline health, match rate quality, high-severity signals, and the top sources and categories.
-Write in plain English with short paragraphs or bullet points. Be direct and actionable.`
+const SYSTEM_PROMPT = `You are a CSE analyst at HousecallPro. Analyze signal pipeline data and community quotes to surface what pros are actually experiencing.
 
-// buildSummary — aggregates raw signals into the D-05 summary object.
-// Module-level helper, immutable, no mutation. Filter expressions copied from App.jsx lines 139-141, 164-171.
+Focus on:
+- pipelineHealth: 1-2 sentences on match rate quality and signal volume
+- themes: 3-5 recurring themes from the community quotes — what are pros frustrated about, what do they want, what's driving churn? Group similar quotes.
+
+Return ONLY valid JSON — no markdown fences, no explanation:
+{"pipelineHealth":{"headline":"...","body":"..."},"themes":[{"title":"...","detail":"...","sentiment":"negative|positive|neutral"}]}`
+
+const CHAT_SYSTEM_PROMPT = `You are a CSE analyst at HousecallPro. Answer questions about the signal pipeline data concisely and directly. Plain English only, no markdown formatting, no bullet points. 2-3 sentences max unless more detail is genuinely needed.`
+
+function buildMetrics(signals) {
+  const matched = signals.filter(s => s.match_method != null && s.match_method !== 'not_found')
+  const highSev = signals.filter(s => s.severity === 'high')
+  const churn = signals.filter(s => s.signal_type === 'churn')
+  const eu = signals.filter(s => s.signal_type === 'enrollment' || s.signal_type === 'upsell')
+  const total = signals.length
+  return {
+    total,
+    matched: matched.length,
+    matchRatePct: total > 0 ? Math.round((matched.length / total) * 100) : 0,
+    highSeverity: highSev.length,
+    highSeverityPct: total > 0 ? Math.round((highSev.length / total) * 100) : 0,
+    churn: churn.length,
+    eu: eu.length,
+  }
+}
+
 function buildSummary(signals) {
-  const matched = signals.filter((s) => s.match_method != null && s.match_method !== 'not_found')
-  const highSeverity = signals.filter((s) => s.severity === 'high')
-  const churn = signals.filter((s) => s.signal_type === 'churn')
-  const enrollment = signals.filter((s) => s.signal_type === 'enrollment')
+  const metrics = buildMetrics(signals)
   const topSources = countByField(signals, 'source').slice(0, 3)
   const topCategories = countByField(signals, 'category').slice(0, 3)
+  const keyQuotes = signals
+    .filter(s => s.key_quote?.trim())
+    .slice(0, 500)
+    .map(s => s.key_quote.trim())
+  return { date: new Date().toISOString().split('T')[0], ...metrics, topSources, topCategories, keyQuotes }
+}
 
-  return {
-    date: new Date().toISOString().split('T')[0],
-    totalSignals: signals.length,
-    matchedCount: matched.length,
-    matchRatePct: signals.length > 0 ? Math.round((matched.length / signals.length) * 100) : 0,
-    highSeverityCount: highSeverity.length,
-    churnSignalCount: churn.length,
-    enrollmentSignalCount: enrollment.length,
-    top3Sources: topSources,
-    top3Categories: topCategories,
+function buildUserMessage(summary) {
+  return `Analyze this HousecallPro CSE signal pipeline as of ${summary.date}.
+
+Stats:
+- Total signals: ${summary.total}
+- Match rate: ${summary.matchRatePct}% (${summary.matched} matched)
+- High severity: ${summary.highSeverity} (${summary.highSeverityPct}%)
+- Churn: ${summary.churn} | Enrollment+Upsell: ${summary.eu}
+- Top sources: ${summary.topSources.map(s => `${s.name} (${s.count})`).join(', ')}
+- Top categories: ${summary.topCategories.map(c => `${c.name} (${c.count})`).join(', ')}
+
+Community signal quotes (${summary.keyQuotes.length} signals):
+${summary.keyQuotes.map((q, i) => `${i + 1}. "${q}"`).join('\n')}`
+}
+
+function buildChatContext(signals) {
+  const metrics = buildMetrics(signals)
+  const topSources = countByField(signals, 'source').slice(0, 5)
+  const topCategories = countByField(signals, 'category').slice(0, 5)
+  const sampleQuotes = signals.filter(s => s.key_quote?.trim()).slice(0, 30).map(s => s.key_quote.trim())
+  return `Signal pipeline context:
+- Total: ${metrics.total} signals | Match rate: ${metrics.matchRatePct}% | High severity: ${metrics.highSeverity} (${metrics.highSeverityPct}%)
+- Churn: ${metrics.churn} | E&U: ${metrics.eu}
+- Top sources: ${topSources.map(s => `${s.name} (${s.count})`).join(', ')}
+- Top categories: ${topCategories.map(c => `${c.name} (${c.count})`).join(', ')}
+- Sample quotes: ${sampleQuotes.map(q => `"${q}"`).join(' | ')}`
+}
+
+function parseAnalysis(raw) {
+  try {
+    const start = raw.indexOf('{')
+    const end = raw.lastIndexOf('}')
+    if (start === -1 || end === -1) throw new Error('no JSON found')
+    return JSON.parse(raw.slice(start, end + 1))
+  } catch {
+    return {
+      pipelineHealth: { headline: 'Analysis complete', body: raw },
+      themes: [],
+    }
   }
 }

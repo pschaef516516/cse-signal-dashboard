@@ -31,25 +31,30 @@ export default async function handler(req) {
   }
 
   try {
-    const { summary } = await req.json()
+    const { userMessage, mode } = await req.json()
+
+    const SYSTEM_PROMPTS = {
+      analysis: `You are a CSE analyst at HousecallPro. Analyze signal pipeline data and community quotes to surface what pros are actually experiencing.
+
+Focus on:
+- pipelineHealth: 1-2 sentences on match rate quality and signal volume
+- themes: 3-5 recurring themes from the community quotes — what are pros frustrated about, what do they want, what's driving churn? Group similar quotes.
+
+Return ONLY valid JSON — no markdown fences, no explanation:
+{"pipelineHealth":{"headline":"...","body":"..."},"themes":[{"title":"...","detail":"...","sentiment":"negative|positive|neutral"}]}`,
+      chat: `You are a CSE analyst at HousecallPro. Answer questions about the signal pipeline data concisely and directly. Plain English only, no markdown formatting, no bullet points. 2-3 sentences max unless more detail is genuinely needed.`,
+    }
+
+    const systemPrompt = SYSTEM_PROMPTS[mode] ?? SYSTEM_PROMPTS.analysis
 
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      system: `You are a CSE (Customer Success Engineering) analyst at HousecallPro.
-Analyze the signal pipeline data and provide a concise written summary for the CSE team.
-Focus on: overall pipeline health, match rate quality, high-severity signals, and the top sources and categories.
-Write in plain English with short paragraphs or bullet points. Be direct and actionable.`,
-      messages: [
-        {
-          role: 'user',
-          content: `Analyze this signal pipeline summary as of ${summary.date}:\n\n${JSON.stringify(summary, null, 2)}`,
-        },
-      ],
+      max_tokens: 2048,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
     })
 
-    // Guard against empty content (RESEARCH.md Pitfall 6)
-    const analysis = message.content?.[0]?.text ?? 'No analysis returned.'
+    const analysis = message.content?.[0]?.text ?? '{}'
 
     return new Response(JSON.stringify({ analysis }), {
       status: 200,

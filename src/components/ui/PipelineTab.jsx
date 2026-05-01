@@ -36,8 +36,7 @@ export default function PipelineTab({ signals, posts }) {
       return getISOWeekLabel(new Date(p.captured_date)) === row.week
     }).length
     const signalCount = (row.churn || 0) + (row.enrollment || 0) + (row.upsell || 0)
-    const total = signalCount + postCount
-    const rate = total > 0 ? Math.round((signalCount / total) * 100) : 0
+    const rate = postCount > 0 ? Math.round((signalCount / postCount) * 100) : 0
     return { week: formatWeekLabel(row.week), signalCount, postCount, rate }
   })
 

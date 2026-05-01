@@ -61,7 +61,9 @@ export function getWeekRange(isoWeek) {
 
 // Returns a human-readable label like "Apr 20 – Apr 26" for a given 'YYYY-WXX' string.
 export function formatWeekRangeLabel(isoWeek) {
-  const { start, end } = getWeekRange(isoWeek)
+  const range = getWeekRange(isoWeek)
+  if (!range) return isoWeek ?? ''
+  const { start, end } = range
   const opts = { month: 'short', day: 'numeric' }
   return `${start.toLocaleDateString('en-US', opts)} – ${end.toLocaleDateString('en-US', opts)}`
 }

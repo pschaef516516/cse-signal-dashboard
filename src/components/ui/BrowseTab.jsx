@@ -180,6 +180,7 @@ export default function BrowseTab({ onSignalClick }) {
           if (!isValidDateString(selectedDate)) {
             setSignalsForDate([])
             setPostsForDate([])
+            setLoading(false)
             return
           }
           ;[signals, posts] = await Promise.all([

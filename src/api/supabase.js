@@ -33,13 +33,19 @@ export async function fetchPosts() {
   const all = []
   let offset = 0
 
-  while (true) {
+  const MAX_PAGES = 50
+  let pages = 0
+  while (pages < MAX_PAGES) {
     const page = await fetchSupabase(
       `posts?select=id,captured_date,source,author_name,author_profile_url,post_url,record_type,text&limit=${PAGE_SIZE}&offset=${offset}`
     )
     all.push(...page)
+    pages++
     if (page.length < PAGE_SIZE) break
     offset += PAGE_SIZE
+  }
+  if (pages >= MAX_PAGES) {
+    console.warn('fetchPosts: hit MAX_PAGES limit — data may be truncated')
   }
 
   return all

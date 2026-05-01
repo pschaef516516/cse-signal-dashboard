@@ -58,7 +58,7 @@ export default function SignalVolumeChart({ signals, onBarClick, mode = 'all' })
             strokeWidth={2}
             fill="url(#fillChurn)"
             dot={{ r: 4, fill: '#D81860' }}
-            activeDot={click ? { r: 6, onClick: (_, payload) => click(payload) } : { r: 6 }}
+            activeDot={click ? { r: 6, onClick: (_, payload) => click(payload.payload.week) } : { r: 6 }}
           />
         )}
         {mode === 'eu' && (
@@ -70,7 +70,7 @@ export default function SignalVolumeChart({ signals, onBarClick, mode = 'all' })
             strokeWidth={2}
             fill="url(#fillEnrollment)"
             dot={{ r: 4, fill: '#0057FF' }}
-            activeDot={click ? { r: 6, onClick: (_, payload) => click(payload) } : { r: 6 }}
+            activeDot={click ? { r: 6, onClick: (_, payload) => click(payload.payload.week) } : { r: 6 }}
           />
         )}
         {mode === 'eu' && (
@@ -82,7 +82,7 @@ export default function SignalVolumeChart({ signals, onBarClick, mode = 'all' })
             strokeWidth={2}
             fill="url(#fillUpsell)"
             dot={{ r: 4, fill: '#623CC9' }}
-            activeDot={click ? { r: 6, onClick: (_, payload) => click(payload) } : { r: 6 }}
+            activeDot={click ? { r: 6, onClick: (_, payload) => click(payload.payload.week) } : { r: 6 }}
           />
         )}
       </AreaChart>
