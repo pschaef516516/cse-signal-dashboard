@@ -40,10 +40,10 @@
 
 **Depends on:** Phase 03
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 - [x] 04-01-PLAN.md — App.jsx: match filter state for Churn/E&U + sub-7-day Signal Volume chart guard
-- [ ] 04-02-PLAN.md — BrowseTab.jsx: 400px scroll bounds for signals/posts + match filter pill row
+- [x] 04-02-PLAN.md — BrowseTab.jsx: 400px scroll bounds for signals/posts + match filter pill row
 - [x] 04-03-PLAN.md — PipelineTab.jsx: 'Updated daily through yesterday' subtext on Posts Ingested
 
 ### Phase 05 — Claude AI Analysis
