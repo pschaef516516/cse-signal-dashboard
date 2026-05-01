@@ -20,10 +20,13 @@ async function fetchSupabase(path) {
 
 const SIGNAL_COLUMNS = 'id,created_at,captured_date,signal_type,source,record_type,match_method,org_id,org_uuid,org_name,org_size,confidence,severity,preventability,routed_at,routing_reason,key_quote,summary,suggested_action,text,author_name,author_profile_url,post_url,parent_post_url,plan_name,plan_tier,enrollment_date,churn_date,vertical,phone,segment,active_subscriptions,status,customer_status,category,email,user_id'
 
+// Signals below 0.6 confidence are not actionable — filter server-side to reduce payload.
+const SIGNAL_QUALITY_FILTER = 'confidence=gte.0.6'
+
 // Fetch all signals — only columns the dashboard needs.
 // limit=10000 overrides the default 1,000-row cap.
 export async function fetchSignals() {
-  return fetchSupabase(`signals?select=${SIGNAL_COLUMNS}&limit=10000`)
+  return fetchSupabase(`signals?select=${SIGNAL_COLUMNS}&${SIGNAL_QUALITY_FILTER}&limit=10000`)
 }
 
 // Fetch all posts with pagination (server caps at 1,000 rows per request).
@@ -60,7 +63,7 @@ export async function fetchSignalsByDate(date) {
   if (!date) return []
   const start = `${date}T00:00:00`
   const end = `${date}T23:59:59`
-  return fetchSupabase(`signals?select=${SIGNAL_COLUMNS}&created_at=gte.${start}&created_at=lte.${end}&limit=10000`)
+  return fetchSupabase(`signals?select=${SIGNAL_COLUMNS}&${SIGNAL_QUALITY_FILTER}&created_at=gte.${start}&created_at=lte.${end}&limit=10000`)
 }
 
 // Phase 02 (D-15, D-17): Browse tab — fetch posts captured on a specific date.
@@ -77,7 +80,7 @@ export async function fetchPostsByDate(date) {
 // startISO and endISO are full datetime strings: '2026-04-20T00:00:00' / '2026-04-26T23:59:59'
 export async function fetchSignalsByRange(startISO, endISO) {
   if (!startISO || !endISO) return []
-  return fetchSupabase(`signals?select=${SIGNAL_COLUMNS}&created_at=gte.${startISO}&created_at=lte.${endISO}&limit=10000`)
+  return fetchSupabase(`signals?select=${SIGNAL_COLUMNS}&${SIGNAL_QUALITY_FILTER}&created_at=gte.${startISO}&created_at=lte.${endISO}&limit=10000`)
 }
 
 // Browse tab — fetch posts within a date range (used for Week and Month granularity).
