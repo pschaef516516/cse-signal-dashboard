@@ -31,6 +31,21 @@ function previewText(content) {
   return s.length > 120 ? `${s.slice(0, 120)}…` : s
 }
 
+// Phase 04 — pill button style for match filter (copied verbatim from FilterPills.jsx lines 8-19).
+function pillStyle(active) {
+  return {
+    padding: '8px 12px',
+    fontSize: 12,
+    fontWeight: 600,
+    borderRadius: 20,
+    border: active ? '1px solid #0057FF' : '1px solid #E1E6F2',
+    background: active ? '#0057FF' : '#FFFFFF',
+    color: active ? '#FFFFFF' : '#6B7487',
+    cursor: 'pointer',
+    minHeight: 36,
+  }
+}
+
 // --- Shared inline styles ---------------------------------------------------
 
 const sectionPanelStyle = {
@@ -339,6 +354,26 @@ export default function BrowseTab({ onSignalClick }) {
           <BrowseFilterPill label="Confidence" options={confidenceOptions} value={confidenceFilter} onChange={setConfidenceFilter} />
         </div>
 
+        {/* Phase 04 — Match filter pill row (D-03, D-04, D-05) */}
+        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7487' }}>Match status:</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+              { value: 'all', label: 'All' },
+              { value: 'matched', label: 'Matched' },
+              { value: 'unmatched', label: 'Unmatched' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setMatchFilter(opt.value)}
+                style={pillStyle(matchFilter === opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {displayedSignals.length === 0 ? (
           <p style={emptyStateStyle}>No signals found for this period</p>
         ) : (
@@ -351,25 +386,27 @@ export default function BrowseTab({ onSignalClick }) {
               <span>Confidence</span>
               <span>Created</span>
             </div>
-            {displayedSignals.map((s) => (
-              <div
-                key={s.id}
-                onClick={() => onSignalClick(s, displayedSignals)}
-                style={tableRowStyle(true)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') onSignalClick(s, displayedSignals)
-                }}
-              >
-                <span>{s.org_name || 'Unknown'}</span>
-                <span>{s.signal_type ?? '—'}</span>
-                <span>{s.severity ?? '—'}</span>
-                <span>{normalizeSource(s.source)}</span>
-                <span>{formatConfidence(s.confidence)}</span>
-                <span>{formatDate(s.created_at)}</span>
-              </div>
-            ))}
+            <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+              {displayedSignals.map((s) => (
+                <div
+                  key={s.id}
+                  onClick={() => onSignalClick(s, displayedSignals)}
+                  style={tableRowStyle(true)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') onSignalClick(s, displayedSignals)
+                  }}
+                >
+                  <span>{s.org_name || 'Unknown'}</span>
+                  <span>{s.signal_type ?? '—'}</span>
+                  <span>{s.severity ?? '—'}</span>
+                  <span>{normalizeSource(s.source)}</span>
+                  <span>{formatConfidence(s.confidence)}</span>
+                  <span>{formatDate(s.created_at)}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -390,40 +427,42 @@ export default function BrowseTab({ onSignalClick }) {
               <span>Content Preview</span>
               <span>Post</span>
             </div>
-            {postsForDate.map((p) => (
-              <div key={p.id} style={postsRowStyle}>
-                <span>{formatDate(p.captured_date)}</span>
-                <span style={{ textTransform: 'capitalize' }}>{p.record_type || '—'}</span>
-                <span>{normalizeSource(p.source)}</span>
-                <span>
-                  {p.author_profile_url ? (
-                    <a
-                      href={p.author_profile_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: '#0057FF', textDecoration: 'none', fontWeight: 500 }}
-                    >
-                      {p.author_name || 'Unknown'}
-                    </a>
-                  ) : (
-                    p.author_name || 'Unknown'
-                  )}
-                </span>
-                <span>{previewText(p.text)}</span>
-                <span>
-                  {p.post_url ? (
-                    <a
-                      href={p.post_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: '#0057FF', fontSize: 12, textDecoration: 'none', fontWeight: 500 }}
-                    >
-                      View →
-                    </a>
-                  ) : '—'}
-                </span>
-              </div>
-            ))}
+            <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+              {postsForDate.map((p) => (
+                <div key={p.id} style={postsRowStyle}>
+                  <span>{formatDate(p.captured_date)}</span>
+                  <span style={{ textTransform: 'capitalize' }}>{p.record_type || '—'}</span>
+                  <span>{normalizeSource(p.source)}</span>
+                  <span>
+                    {p.author_profile_url ? (
+                      <a
+                        href={p.author_profile_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#0057FF', textDecoration: 'none', fontWeight: 500 }}
+                      >
+                        {p.author_name || 'Unknown'}
+                      </a>
+                    ) : (
+                      p.author_name || 'Unknown'
+                    )}
+                  </span>
+                  <span>{previewText(p.text)}</span>
+                  <span>
+                    {p.post_url ? (
+                      <a
+                        href={p.post_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#0057FF', fontSize: 12, textDecoration: 'none', fontWeight: 500 }}
+                      >
+                        View →
+                      </a>
+                    ) : '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
