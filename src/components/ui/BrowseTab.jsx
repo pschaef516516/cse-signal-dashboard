@@ -134,6 +134,8 @@ export default function BrowseTab({ onSignalClick }) {
   const [severityFilter, setSeverityFilter] = useState(null)
   const [typeFilter, setTypeFilter] = useState(null)
   const [confidenceFilter, setConfidenceFilter] = useState(null)
+  // Phase 04 — match filter (D-03 to D-05). Same shape as other Browse filters.
+  const [matchFilter, setMatchFilter] = useState('all') // 'all' | 'matched' | 'unmatched'
 
   // Reset all filter pills whenever the granularity tab changes.
   useEffect(() => {
@@ -141,6 +143,7 @@ export default function BrowseTab({ onSignalClick }) {
     setSeverityFilter(null)
     setTypeFilter(null)
     setConfidenceFilter(null)
+    setMatchFilter('all')  // Phase 04 ADDITION (D-03, Pitfall 3)
   }, [granularity])
 
   // Precompute option lists for the week/month selects.
@@ -236,6 +239,9 @@ export default function BrowseTab({ onSignalClick }) {
       const hi = parseFloat(hiStr)
       if (isNaN(conf) || conf < lo || conf > hi) return false
     }
+    // Phase 04 ADDITION — match filter (D-04). AND-chained with other filters.
+    if (matchFilter === 'matched' && !(s.match_method != null && s.match_method !== 'not_found')) return false
+    if (matchFilter === 'unmatched' && s.match_method !== 'not_found') return false
     return true
   })
 
