@@ -341,13 +341,13 @@ export default function App() {
               <Panel title="Signals by Week">
                 {isSubWeek ? (
                   <p style={{ fontSize: 28, fontWeight: 700, color: '#15181D', margin: 0, textAlign: 'center', padding: '24px 0' }}>
-                    {tabSignals.length}
+                    {displayedTabSignals.length}
                     <span style={{ fontSize: 14, fontWeight: 400, color: '#6B7487', marginLeft: 8 }}>
                       signals {activeTimeFilter.mode === 'today' ? 'today' : 'yesterday'}
                     </span>
                   </p>
                 ) : (
-                  <SignalVolumeChart signals={tabSignals} onBarClick={handleWeekClick} mode={isChurn ? 'churn' : 'eu'} />
+                  <SignalVolumeChart signals={displayedTabSignals} onBarClick={handleWeekClick} mode={isChurn ? 'churn' : 'eu'} />
                 )}
               </Panel>
             </div>
@@ -357,7 +357,7 @@ export default function App() {
               <div style={{ marginBottom: 32 }}>
                 <SectionHeader title="Enrollment vs Upsell" subtitle="Volume by week, split by signal type" />
                 <Panel title="Enrollment vs Upsell Volume Over Time">
-                  <EnrollmentUpsellSplitChart signals={tabSignals} />
+                  <EnrollmentUpsellSplitChart signals={displayedTabSignals} />
                 </Panel>
               </div>
             )}
@@ -367,11 +367,11 @@ export default function App() {
               <SectionHeader title="Signal Sources" subtitle="Which communities produce the most signals" />
               {isChurn ? (
                 <Panel title="Signals by Community">
-                  <CommunityChart signals={tabSignals} onBarClick={handleCommunityClick} />
+                  <CommunityChart signals={displayedTabSignals} onBarClick={handleCommunityClick} />
                 </Panel>
               ) : (
                 <Panel title="Signal Sources by Type">
-                  <EUCommunityChart signals={tabSignals} onBarClick={handleCommunityClick} />
+                  <EUCommunityChart signals={displayedTabSignals} onBarClick={handleCommunityClick} />
                 </Panel>
               )}
             </div>
@@ -384,7 +384,7 @@ export default function App() {
               />
               <Panel title="Click a category to view its signals">
                 <CategoryBreakdownChart
-                  signals={tabSignals}
+                  signals={displayedTabSignals}
                   onBarClick={handleCategoryClick}
                 />
               </Panel>
@@ -401,7 +401,7 @@ export default function App() {
                   <ConfidenceHistogram signals={tabSignals} />
                 </Panel>
                 <Panel title="Signals by Severity">
-                  <SeverityChart signals={tabSignals} onBarClick={handleSeverityClick} />
+                  <SeverityChart signals={displayedTabSignals} onBarClick={handleSeverityClick} />
                 </Panel>
               </div>
             </div>

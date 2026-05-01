@@ -10,6 +10,20 @@ export default function SignalVolumeChart({ signals, onBarClick, mode = 'all' })
     return <p style={{ fontSize: 12, color: '#6B7487', margin: 0 }}>No data yet.</p>
   }
 
+  if (data.length < 2) {
+    const count = data[0]
+      ? mode === 'churn'
+        ? data[0].churn
+        : (data[0].enrollment || 0) + (data[0].upsell || 0)
+      : 0
+    return (
+      <p style={{ fontSize: 28, fontWeight: 700, color: '#15181D', margin: 0, textAlign: 'center', padding: '24px 0' }}>
+        {count}
+        <span style={{ fontSize: 14, fontWeight: 400, color: '#6B7487', marginLeft: 8 }}>signals this week so far</span>
+      </p>
+    )
+  }
+
   const click = onBarClick ? (entry) => onBarClick(entry.week) : undefined
   const clickStyle = onBarClick ? { cursor: 'pointer' } : undefined
 
