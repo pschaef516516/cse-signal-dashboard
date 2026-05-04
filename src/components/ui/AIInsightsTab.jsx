@@ -72,7 +72,49 @@ const SUGGESTED_QUESTIONS = [
   'Top signal categories this period?',
 ]
 
-function ChatBar({ signals }) {
+function SignalChip({ orgName, signals, onSignalClick }) {
+  const signal = signals.find(s => s.org_name === orgName) ?? signals.find(s => s.org_name?.toLowerCase().includes(orgName.toLowerCase()))
+
+  if (!signal) return <span style={{ fontWeight: 600 }}>{orgName}</span>
+
+  return (
+    <button
+      onClick={() => onSignalClick(signal)}
+      style={{
+        background: '#EEF3FF',
+        border: '1px solid #C7D7FF',
+        borderRadius: 6,
+        padding: '1px 8px',
+        fontSize: 12,
+        fontWeight: 600,
+        color: '#0061FF',
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+      }}
+    >
+      {orgName} ↗
+    </button>
+  )
+}
+
+function ChatMessage({ message, signals, onSignalClick }) {
+  if (message.role === 'user') return <span>{message.text}</span>
+
+  const parts = message.text.split(/\[SIGNAL:([^\]]+)\]/)
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 0
+          ? <span key={i}>{part}</span>
+          : <SignalChip key={i} orgName={part} signals={signals} onSignalClick={onSignalClick} />
+      )}
+    </>
+  )
+}
+
+function ChatBar({ signals, onSignalClick }) {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([])
   const [history, setHistory] = useState([])
@@ -187,7 +229,7 @@ function ChatBar({ signals }) {
                     lineHeight: 1.6,
                     maxWidth: '80%',
                   }}>
-                    {m.text}
+                    <ChatMessage message={m} signals={signals} onSignalClick={onSignalClick} />
                   </div>
                 </div>
               ))}
@@ -247,7 +289,7 @@ function ChatBar({ signals }) {
 
 const CACHE_KEY = 'cse_ai_insights'
 
-export default function AIInsightsTab({ signals }) {
+export default function AIInsightsTab({ signals, onSignalClick }) {
   const [loading, setLoading] = useState(false)
   const [analysis, setAnalysis] = useState(null)
   const [error, setError] = useState(null)
@@ -272,6 +314,7 @@ export default function AIInsightsTab({ signals }) {
     sessionStorage.removeItem(CACHE_KEY)
     setLoading(true)
     setError(null)
+    setAnalysis(null)
     try {
       const summary = buildSummary(signals)
       const userMessage = buildUserMessage(summary)
@@ -283,7 +326,7 @@ export default function AIInsightsTab({ signals }) {
         const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })
         const msg = await client.messages.create({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 1024,
+          max_tokens: 2048,
           system: SYSTEM_PROMPT,
           messages: [{ role: 'user', content: userMessage }],
         })
@@ -300,6 +343,7 @@ export default function AIInsightsTab({ signals }) {
       }
 
       const parsed = parseAnalysis(raw)
+      if (!parsed) throw new Error('Could not parse response')
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       sessionStorage.setItem(CACHE_KEY, JSON.stringify({ analysis: parsed, analyzedAt: time }))
       setAnalysis(parsed)
@@ -369,7 +413,7 @@ export default function AIInsightsTab({ signals }) {
         </div>
       )}
 
-      <ChatBar signals={signals} />
+      <ChatBar signals={signals} onSignalClick={onSignalClick} />
 
       {analysis && (
         <>
@@ -402,7 +446,7 @@ Focus on:
 Return ONLY valid JSON — no markdown fences, no explanation:
 {"pipelineHealth":{"headline":"...","body":"..."},"themes":[{"title":"...","detail":"...","sentiment":"negative|positive|neutral","count":number}]}`
 
-const CHAT_SYSTEM_PROMPT = `You are a CSE analyst at HousecallPro. Answer questions about the signal pipeline data concisely and directly. Plain English only, no markdown formatting, no bullet points. 2-3 sentences max unless more detail is genuinely needed.`
+const CHAT_SYSTEM_PROMPT = `You are a CSE analyst at HousecallPro. Answer questions about the signal pipeline data concisely and directly. Plain English only, no markdown formatting, no bullet points. 2-3 sentences max unless more detail is genuinely needed. When referencing a specific org or signal, use the exact format [SIGNAL:Org Name Here] so the dashboard can link to it.`
 
 function buildMetrics(signals) {
   const matched = signals.filter(s => s.match_method != null && s.match_method !== 'not_found')
@@ -427,7 +471,7 @@ function buildSummary(signals) {
   const topCategories = countByField(signals, 'category').slice(0, 3)
   const keyQuotes = signals
     .filter(s => s.key_quote?.trim())
-    .slice(0, 500)
+    .slice(0, 250)
     .map(s => s.key_quote.trim())
   return { date: new Date().toISOString().split('T')[0], ...metrics, topSources, topCategories, keyQuotes }
 }
@@ -451,7 +495,7 @@ function buildChatContext(signals) {
   const metrics = buildMetrics(signals)
   const topSources = countByField(signals, 'source').slice(0, 5)
   const topCategories = countByField(signals, 'category').slice(0, 5)
-  const sampleQuotes = signals.filter(s => s.key_quote?.trim()).slice(0, 30).map(s => s.key_quote.trim())
+  const sampleQuotes = signals.filter(s => s.key_quote?.trim()).slice(0, 30).map(s => `[${s.org_name ?? 'Unknown'}] ${s.key_quote.trim()}`)
   return `Signal pipeline context:
 - Total: ${metrics.total} signals | Match rate: ${metrics.matchRatePct}% | High severity: ${metrics.highSeverity} (${metrics.highSeverityPct}%)
 - Churn: ${metrics.churn} | E&U: ${metrics.eu}
@@ -467,9 +511,6 @@ function parseAnalysis(raw) {
     if (start === -1 || end === -1) throw new Error('no JSON found')
     return JSON.parse(raw.slice(start, end + 1))
   } catch {
-    return {
-      pipelineHealth: { headline: 'Analysis complete', body: raw },
-      themes: [],
-    }
+    return null
   }
 }

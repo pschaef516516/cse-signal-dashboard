@@ -446,11 +446,16 @@ export default function App() {
           </div>
         )}
 
-        {isAI && (
-          <div style={{ marginBottom: 32 }}>
-            <AIInsightsTab signals={signals} />
-          </div>
-        )}
+        <div style={{ display: isAI ? 'block' : 'none', marginBottom: 32 }}>
+          <AIInsightsTab
+            signals={signals}
+            onSignalClick={(signal) => {
+              setModalSignals(signals)
+              setModalIndex(signals.indexOf(signal))
+              setModalOpen(true)
+            }}
+          />
+        </div>
 
       </div>
 

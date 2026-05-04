@@ -21,12 +21,12 @@ const valueStyle = {
 }
 
 const sectionLabelStyle = {
-  fontSize: 12,
-  fontWeight: 600,
+  fontSize: 11,
+  fontWeight: 700,
   color: '#6B7487',
   margin: '0 0 8px',
   textTransform: 'uppercase',
-  letterSpacing: '0.04em',
+  letterSpacing: '0.07em',
 }
 
 const linkStyle = {
@@ -46,10 +46,19 @@ function MetaRow({ label, value }) {
   )
 }
 
+function SectionLabel({ title }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+      <p style={{ ...sectionLabelStyle, margin: 0, whiteSpace: 'nowrap' }}>{title}</p>
+      <div style={{ flex: 1, height: 1, background: '#E1E6F2' }} />
+    </div>
+  )
+}
+
 function MetaSection({ title, children }) {
   return (
     <div style={{ paddingBottom: 16, borderBottom: '1px solid #E1E6F2', marginBottom: 16 }}>
-      <p style={{ ...sectionLabelStyle, marginBottom: 10 }}>{title}</p>
+      <SectionLabel title={title} />
       {children}
     </div>
   )
@@ -78,22 +87,6 @@ export default function SignalDetail({ signal, onBack }) {
         </button>
       )}
 
-      {/* Links — post + author profile */}
-      {(signal.post_url || signal.author_profile_url) && (
-        <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-          {signal.post_url && (
-            <a href={signal.post_url} target="_blank" rel="noopener noreferrer" style={linkStyle}>
-              View Post →
-            </a>
-          )}
-          {signal.author_profile_url && (
-            <a href={signal.author_profile_url} target="_blank" rel="noopener noreferrer" style={linkStyle}>
-              Author Profile →
-            </a>
-          )}
-        </div>
-      )}
-
       {/* Signal info */}
       <MetaSection title="Signal">
         <MetaRow label="Org" value={signal.org_name || 'Unknown'} />
@@ -112,7 +105,7 @@ export default function SignalDetail({ signal, onBack }) {
       {(signal.plan_name || signal.plan_tier || signal.vertical || signal.segment ||
         signal.status || signal.customer_status || signal.active_subscriptions ||
         signal.org_size || signal.enrollment_date || signal.churn_date ||
-        signal.email || signal.phone) && (
+        signal.email || signal.phone || signal.author_profile_url) && (
         <MetaSection title="Customer">
           <MetaRow label="Plan" value={signal.plan_name} />
           <MetaRow label="Plan Tier" value={signal.plan_tier} />
@@ -126,13 +119,21 @@ export default function SignalDetail({ signal, onBack }) {
           <MetaRow label="Churn Date" value={formatDate(signal.churn_date)} />
           <MetaRow label="Email" value={signal.email} />
           <MetaRow label="Phone" value={signal.phone} />
+          {signal.author_profile_url && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+              <p style={labelStyle}>Profile</p>
+              <a href={signal.author_profile_url} target="_blank" rel="noopener noreferrer" style={linkStyle}>
+                Author Profile →
+              </a>
+            </div>
+          )}
         </MetaSection>
       )}
 
       {/* Key Quote */}
       {signal.key_quote && (
         <div style={{ marginBottom: 16 }}>
-          <p style={sectionLabelStyle}>Key Quote</p>
+          <SectionLabel title="Key Quote" />
           <blockquote style={{
             background: '#F5F7FF',
             borderLeft: '4px solid #0057FF',
@@ -151,17 +152,33 @@ export default function SignalDetail({ signal, onBack }) {
       {/* Original post text */}
       {signal.text && (
         <div style={{ marginBottom: 16 }}>
-          <p style={sectionLabelStyle}>Original Post</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <SectionLabel title="Original Post" />
+            {signal.post_url && (
+              <a href={signal.post_url} target="_blank" rel="noopener noreferrer" style={{ ...linkStyle, fontSize: 13, marginBottom: 10 }}>
+                View Post →
+              </a>
+            )}
+          </div>
           <p style={{ fontSize: 14, color: '#15181D', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
             {signal.text}
           </p>
         </div>
       )}
 
+      {/* View Post fallback — shown only when there's no post body to attach the link to */}
+      {signal.post_url && !signal.text && (
+        <div style={{ marginBottom: 16 }}>
+          <a href={signal.post_url} target="_blank" rel="noopener noreferrer" style={linkStyle}>
+            View Post →
+          </a>
+        </div>
+      )}
+
       {/* Summary */}
       {signal.summary && (
         <div style={{ marginBottom: 16 }}>
-          <p style={sectionLabelStyle}>Summary</p>
+          <SectionLabel title="Summary" />
           <p style={{ fontSize: 14, color: '#15181D', margin: 0, lineHeight: 1.5 }}>
             {signal.summary}
           </p>
@@ -171,7 +188,7 @@ export default function SignalDetail({ signal, onBack }) {
       {/* Suggested Action */}
       {signal.suggested_action && (
         <div style={{ marginBottom: 16 }}>
-          <p style={sectionLabelStyle}>Suggested Action</p>
+          <SectionLabel title="Suggested Action" />
           <div style={{
             background: '#F0FFF6',
             border: '1px solid #B3EAC8',
