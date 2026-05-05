@@ -446,7 +446,9 @@ Focus on:
 Return ONLY valid JSON — no markdown fences, no explanation:
 {"pipelineHealth":{"headline":"...","body":"..."},"themes":[{"title":"...","detail":"...","sentiment":"negative|positive|neutral","count":number}]}`
 
-const CHAT_SYSTEM_PROMPT = `You are a CSE analyst at HousecallPro. Answer questions about the signal pipeline data concisely and directly. Plain English only, no markdown formatting, no bullet points. 2-3 sentences max unless more detail is genuinely needed. When referencing a specific org or signal, use the exact format [SIGNAL:Org Name Here] so the dashboard can link to it.`
+const CHAT_SYSTEM_PROMPT = `You are a CSE analyst at HousecallPro. Answer questions about the signal pipeline data concisely and directly. Plain English only, no markdown formatting, no bullet points. 2-3 sentences max unless more detail is genuinely needed.
+
+CRITICAL: Any time you mention a specific org or company name, you MUST wrap it in [SIGNAL:Org Name] format — no exceptions. Never write an org name as plain text. Examples: [SIGNAL:GPS Plumbing], [SIGNAL:Crescent City Clean LLC]. If you mention multiple orgs, each one must be wrapped. This is how the dashboard makes them clickable.`
 
 function buildMetrics(signals) {
   const matched = signals.filter(s => s.match_method != null && s.match_method !== 'not_found')

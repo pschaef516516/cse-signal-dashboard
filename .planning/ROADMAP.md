@@ -55,3 +55,24 @@
 - [x] 05-01-PLAN.md — Install @anthropic-ai/sdk, create api/analyze.js Vercel function, fix vercel.json + .env.example
 - [x] 05-02-PLAN.md — Create AIInsightsTab.jsx with buildSummary + dual-path dev/prod fetch
 - [x] 05-03-PLAN.md — Wire AIInsightsTab into App.jsx (5th tab + isAI guards)
+
+**Post-launch polish (committed f80e461):**
+- AI Insights pre-loads in background on app mount
+- JSON parse failure fix — cap quotes at 250, restore max_tokens to 2048
+- Signal chips in chat open full signal modal
+- Section labels styled as full-width dividers throughout signal modal
+- Author Profile moved into Customer section, View Post inline with Original Post
+- Clear stale analysis state on re-analyze
+
+---
+
+### Phase 06 — Action Tracking & At-Risk Orgs (PLANNED)
+**Goal:** Make the dashboard actionable for CSMs and community team. Surface which orgs need attention most, track whether signals have been followed up on, and give team members a way to claim and close signals. Wire the existing `actioned_at` / `actioned_by` Supabase fields into the UI.
+
+**Depends on:** Phase 05
+
+**Ideas under consideration:**
+- At-Risk Orgs view — rank matched orgs by signal volume + severity, show who needs attention most
+- Per-org signal history — click any org name to see all their signals in one place
+- Action tracking — mark signals as actioned from the dashboard (complements the Slack workflow)
+- Vercel deployment — ship to production so CSMs can access without localhost
